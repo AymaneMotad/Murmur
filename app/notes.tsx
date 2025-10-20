@@ -2,16 +2,18 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, Alert, Modal, TextInput, Animated, PanResponder } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
-import { getAllNotes, MurmurNote, updateNote, deleteNote } from '@/lib/storage';
+import { getAllNotes, MurmurNote, updateNote, deleteNote, DrawingStroke } from '@/lib/storage';
+import DrawingModal from '@/components/DrawingModal';
 
 interface SwipeableNoteProps {
   item: MurmurNote;
   onEdit: (note: MurmurNote) => void;
   onDelete: (note: MurmurNote) => void;
+  onAddDrawing: (note: MurmurNote) => void;
   formatDate: (timestamp: number) => string;
 }
 
-const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, formatDate }) => {
+const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, onAddDrawing, formatDate }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
   const [isSwiping, setIsSwiping] = useState(false);
@@ -96,12 +98,23 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, f
                     <Text style={styles.editedText}>Edited</Text>
                   </View>
                 )}
+                {item.drawing && item.drawing.length > 0 && (
+                  <View style={styles.drawingIndicator}>
+                    <Text style={styles.drawingText}>🎨</Text>
+                  </View>
+                )}
               </View>
             </View>
             <View style={styles.noteActions}>
-              <View style={styles.editButton}>
-                <Text style={styles.editIcon}>􀉩</Text>
-              </View>
+              <Pressable 
+                style={styles.drawingButton}
+                onPress={() => onAddDrawing(item)}
+              >
+                <View style={styles.pencilIcon}>
+                  <View style={styles.pencilBody} />
+                  <View style={styles.pencilTip} />
+                </View>
+              </Pressable>
             </View>
           </View>
           
@@ -125,6 +138,8 @@ export default function NotesScreen() {
   const [loading, setLoading] = useState(true);
   const [editingNote, setEditingNote] = useState<MurmurNote | null>(null);
   const [editText, setEditText] = useState('');
+  const [drawingNote, setDrawingNote] = useState<MurmurNote | null>(null);
+  const [showDrawingModal, setShowDrawingModal] = useState(false);
 
   useEffect(() => {
     loadNotes();
@@ -170,6 +185,35 @@ export default function NotesScreen() {
     }
   };
 
+  const handleAddDrawing = (note: MurmurNote) => {
+    setDrawingNote(note);
+    setShowDrawingModal(true);
+  };
+
+  const handleSaveDrawing = async (drawing: DrawingStroke[]) => {
+    if (!drawingNote) return;
+    
+    try {
+      const updatedNote = {
+        ...drawingNote,
+        drawing: drawing,
+        modifiedAt: Date.now(),
+      };
+      await updateNote(updatedNote);
+      setDrawingNote(null);
+      setShowDrawingModal(false);
+      loadNotes();
+    } catch (error) {
+      console.error('Failed to save drawing:', error);
+      Alert.alert('Error', 'Failed to save drawing');
+    }
+  };
+
+  const handleCloseDrawing = () => {
+    setDrawingNote(null);
+    setShowDrawingModal(false);
+  };
+
   const handleDeleteNote = async (note: MurmurNote) => {
     try {
       await deleteNote(note.id);
@@ -202,6 +246,7 @@ export default function NotesScreen() {
         item={item}
         onEdit={handleEditNote}
         onDelete={handleDeleteNote}
+        onAddDrawing={handleAddDrawing}
         formatDate={formatDate}
       />
     );
@@ -290,6 +335,14 @@ export default function NotesScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Drawing Modal */}
+      <DrawingModal
+        visible={showDrawingModal}
+        onClose={handleCloseDrawing}
+        onSave={handleSaveDrawing}
+        initialDrawing={drawingNote?.drawing || []}
+      />
     </View>
   );
 }
@@ -451,28 +504,67 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.5,
   },
-  noteActions: {
-    alignItems: 'flex-end',
-  },
-  editButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#2a2f38',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editIcon: {
-    color: '#9BA1A6',
-    fontSize: 14,
-    fontWeight: '600',
-  },
   noteText: {
     color: '#ffffff',
     fontSize: 16,
     lineHeight: 24,
     fontWeight: '400',
     letterSpacing: 0.2,
+  },
+  drawingIndicator: {
+    backgroundColor: '#0066ff',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  drawingText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  noteActions: {
+    alignItems: 'flex-end',
+  },
+  drawingButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  pencilIcon: {
+    width: 16,
+    height: 16,
+    position: 'relative',
+    transform: [{ rotate: '45deg' }],
+  },
+  pencilBody: {
+    position: 'absolute',
+    width: 12,
+    height: 2,
+    backgroundColor: '#0066ff',
+    borderRadius: 1,
+    top: 7,
+    left: 2,
+  },
+  pencilTip: {
+    position: 'absolute',
+    width: 0,
+    height: 0,
+    borderLeftWidth: 3,
+    borderRightWidth: 3,
+    borderBottomWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#ff6b35',
+    top: 0,
+    left: 5,
   },
   emptyContainer: {
     flex: 1,

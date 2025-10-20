@@ -1,11 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export type DrawingStroke = {
+  id: string;
+  points: { x: number; y: number }[];
+  color: string;
+  strokeWidth: number;
+};
+
 export type MurmurNote = {
   id: string;
   text: string;
   audioUri?: string;
   createdAt: number;
   modifiedAt: number;
+  drawing?: DrawingStroke[];
   reminder?: {
     enabled: boolean;
     dateTime?: number;
