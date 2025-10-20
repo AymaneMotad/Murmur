@@ -1,0 +1,49 @@
+<svg width="100%" height="100%" viewBox="0 0 375 812" xmlns="http://www.w3.org/2000/svg">
+  <!-- Full screen dark gradient background -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f1419;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1a1d2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f1419;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0066ff;stop-opacity:0.3" />
+      <stop offset="50%" style="stop-color:#0066ff;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#0066ff;stop-opacity:0.3" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Full screen background -->
+  <rect width="100%" height="100%" fill="url(#bgGradient)"/>
+  
+  <!-- Large audio wave visualization - fills more screen space -->
+  <g transform="translate(187.5, 300)">
+    <!-- Wave bars with glow effect -->
+    <rect x="-80" y="-60" width="12" height="120" fill="url(#waveGradient)" rx="6"/>
+    <rect x="-60" y="-80" width="12" height="160" fill="url(#waveGradient)" rx="6"/>
+    <rect x="-40" y="-100" width="12" height="200" fill="url(#waveGradient)" rx="6"/>
+    <rect x="-20" y="-120" width="12" height="240" fill="url(#waveGradient)" rx="6"/>
+    <rect x="0" y="-140" width="12" height="280" fill="url(#waveGradient)" rx="6"/>
+    <rect x="20" y="-120" width="12" height="240" fill="url(#waveGradient)" rx="6"/>
+    <rect x="40" y="-100" width="12" height="200" fill="url(#waveGradient)" rx="6"/>
+    <rect x="60" y="-80" width="12" height="160" fill="url(#waveGradient)" rx="6"/>
+    <rect x="80" y="-60" width="12" height="120" fill="url(#waveGradient)" rx="6"/>
+  </g>
+  
+  <!-- Large app name -->
+  <text x="187.5" y="500" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="700" fill="#ffffff" text-anchor="middle">Murmur</text>
+  
+  <!-- Large tagline -->
+  <text x="187.5" y="550" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="400" fill="#9BA1A6" text-anchor="middle">Your thoughts, amplified</text>
+  
+  <!-- Loading indicator at bottom -->
+  <circle cx="187.5" cy="700" r="4" fill="#0066ff" opacity="0.6">
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="200" cy="700" r="4" fill="#0066ff" opacity="0.4">
+    <animate attributeName="opacity" values="0.4;1;0.4" dur="1.5s" begin="0.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="212.5" cy="700" r="4" fill="#0066ff" opacity="0.2">
+    <animate attributeName="opacity" values="0.2;1;0.2" dur="1.5s" begin="0.4s" repeatCount="indefinite"/>
+  </circle>
+</svg>

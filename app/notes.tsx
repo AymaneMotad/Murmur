@@ -62,9 +62,14 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, f
 
   return (
     <View style={styles.noteCardContainer}>
-      {/* Red delete background - always visible behind */}
+      {/* Delete background */}
       <View style={styles.deleteBackground}>
-        <Text style={styles.deleteText}>DELETE</Text>
+        <View style={styles.deleteContent}>
+          <View style={styles.deleteIconContainer}>
+            <Text style={styles.deleteIcon}>􀈑</Text>
+          </View>
+          <Text style={styles.deleteText}>Delete</Text>
+        </View>
       </View>
       
       {/* Swipeable note content */}
@@ -82,10 +87,33 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, f
           style={styles.noteContent} 
           onPress={() => onEdit(item)}
         >
-          <Text style={styles.noteText} numberOfLines={3}>
+          <View style={styles.noteHeader}>
+            <View style={styles.noteMeta}>
+              <View style={styles.noteDateContainer}>
+                <Text style={styles.noteDate}>{formatDate(item.createdAt)}</Text>
+                {item.modifiedAt !== item.createdAt && (
+                  <View style={styles.editedIndicator}>
+                    <Text style={styles.editedText}>Edited</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+            <View style={styles.noteActions}>
+              <View style={styles.editButton}>
+                <Text style={styles.editIcon}>􀉩</Text>
+              </View>
+            </View>
+          </View>
+          
+          <Text style={styles.noteText} numberOfLines={0}>
             {item.text}
           </Text>
-          <Text style={styles.noteDate}>{formatDate(item.createdAt)}</Text>
+          
+          {item.text.length > 200 && (
+            <View style={styles.noteFooter}>
+              <Text style={styles.readMoreText}>Tap to read more</Text>
+            </View>
+          )}
         </Pressable>
       </Animated.View>
     </View>
@@ -207,14 +235,20 @@ export default function NotesScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
+      
+      {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>←</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>Notes</Text>
-        <View style={styles.placeholder} />
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Notes</Text>
+          <Text style={styles.headerSubtitle}>{notes.length} {notes.length === 1 ? 'note' : 'notes'}</Text>
+        </View>
+        <View style={styles.headerRight} />
       </View>
       
+      {/* Notes List */}
       <FlatList
         data={notes}
         renderItem={renderNote}
@@ -222,6 +256,7 @@ export default function NotesScreen() {
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
 
       {/* Edit Modal */}
@@ -270,37 +305,62 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1a1d2e',
+    paddingBottom: 24,
+    backgroundColor: '#0f1419',
   },
   backButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#1a1d2e',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#2a2f38',
   },
   backText: {
     color: '#0066ff',
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
     color: '#ffffff',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  placeholder: {
-    width: 60,
+  headerSubtitle: {
+    color: '#9BA1A6',
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 2,
+    letterSpacing: 0.3,
+  },
+  headerRight: {
+    width: 32,
+    height: 32,
   },
   listContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 20,
     flexGrow: 1,
   },
+  separator: {
+    height: 1,
+    backgroundColor: '#2a2f38',
+    marginVertical: 8,
+    marginHorizontal: 20,
+  },
   noteCardContainer: {
-    marginBottom: 12,
+    marginBottom: 16,
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 12,
-    backgroundColor: '#ff4444',
+    borderRadius: 16,
   },
   deleteBackground: {
     position: 'absolute',
@@ -308,47 +368,111 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#ff4444',
+    backgroundColor: '#ff3b30',
     justifyContent: 'center',
     alignItems: 'flex-end',
-    paddingRight: 20,
-    borderRadius: 12,
+    paddingRight: 24,
+    borderRadius: 16,
     zIndex: 1,
   },
-  deleteText: {
-    color: '#fff',
+  deleteContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  deleteIcon: {
+    color: '#ffffff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+  },
+  deleteText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   noteCard: {
-    backgroundColor: '#11151b',
-    borderRadius: 12,
+    backgroundColor: '#1a1d2e',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#1a1d2e',
+    borderColor: '#2a2f38',
     position: 'relative',
     zIndex: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   noteContent: {
-    padding: 16,
-    backgroundColor: '#11151b',
-    borderRadius: 12,
+    padding: 20,
+    backgroundColor: '#1a1d2e',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#1a1d2e',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: '#2a2f38',
+  },
+  noteHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  noteMeta: {
+    flex: 1,
+  },
+  noteDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  noteDate: {
+    color: '#9BA1A6',
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: 0.3,
+  },
+  editedIndicator: {
+    backgroundColor: '#0066ff',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  editedText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  noteActions: {
+    alignItems: 'flex-end',
+  },
+  editButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#2a2f38',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editIcon: {
+    color: '#9BA1A6',
+    fontSize: 14,
+    fontWeight: '600',
   },
   noteText: {
     color: '#ffffff',
     fontSize: 16,
-    lineHeight: 22,
-    marginBottom: 8,
-  },
-  noteDate: {
-    color: '#666',
-    fontSize: 12,
+    lineHeight: 24,
+    fontWeight: '400',
+    letterSpacing: 0.2,
   },
   emptyContainer: {
     flex: 1,

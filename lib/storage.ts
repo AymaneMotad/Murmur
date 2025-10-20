@@ -46,4 +46,38 @@ export async function deleteNote(noteId: string): Promise<void> {
   await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(next));
 }
 
+// User preferences
+const PREFERENCES_KEY = 'murmur:preferences';
+
+export type UserPreferences = {
+  selectedLanguage: string;
+  hasCompletedOnboarding: boolean;
+};
+
+export async function getUserPreferences(): Promise<UserPreferences> {
+  const raw = await AsyncStorage.getItem(PREFERENCES_KEY);
+  if (!raw) {
+    return {
+      selectedLanguage: 'en-US',
+      hasCompletedOnboarding: false,
+    };
+  }
+  try {
+    const parsed: UserPreferences = JSON.parse(raw);
+    return {
+      selectedLanguage: parsed.selectedLanguage || 'en-US',
+      hasCompletedOnboarding: parsed.hasCompletedOnboarding || false,
+    };
+  } catch {
+    return {
+      selectedLanguage: 'en-US',
+      hasCompletedOnboarding: false,
+    };
+  }
+}
+
+export async function saveUserPreferences(preferences: UserPreferences): Promise<void> {
+  await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+}
+
 
