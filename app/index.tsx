@@ -14,6 +14,10 @@ export default function RecordingScreen() {
   const panAnim = useRef(new Animated.Value(0)).current; // for subtle pulse
   const [transcript, setTranscript] = useState('');
   const [showReview, setShowReview] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -74,6 +78,27 @@ export default function RecordingScreen() {
   const stopRecording = useCallback(async () => {
     try {
       stopTimer();
+      setIsProcessing(true);
+      
+      // Processing animation
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 0.8,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1.2,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
       if (recording) {
         await recording.stopAndUnloadAsync();
       }
@@ -84,8 +109,9 @@ export default function RecordingScreen() {
       } catch {}
     } catch {}
     setIsRecording(false);
+    setIsProcessing(false);
     setShowReview(true);
-  }, [recording]);
+  }, [recording, scaleAnim]);
 
   const onMicPress = useCallback(() => {
     if (isRecording) stopRecording();
@@ -94,7 +120,8 @@ export default function RecordingScreen() {
 
   const onSwipeUp = useCallback((e: GestureResponderEvent) => {
     // MVP: provide audible feedback using TTS
-    Speech.speak('Recording started', { rate: 1.0 });
+    setIsSpeaking(true);
+    Speech.speak('Recording started', { rate: 1.0, onDone: () => setIsSpeaking(false) });
     startRecording();
   }, [startRecording]);
 
@@ -109,7 +136,9 @@ export default function RecordingScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
       <Text style={styles.title}>Murmur</Text>
-      <Text style={styles.subtitle}>{isRecording ? 'Recording…' : 'Tap or swipe up to record'}</Text>
+      <Text style={styles.subtitle}>
+        {isProcessing ? 'Processing…' : isSpeaking ? 'Speaking…' : isRecording ? 'Recording…' : 'Tap or swipe up to record'}
+      </Text>
       <Text style={styles.timer}>{minutes}:{seconds}</Text>
 
       <Pressable
@@ -123,17 +152,22 @@ export default function RecordingScreen() {
             width: 168,
             height: 168,
             borderRadius: 84,
-            backgroundColor: '#0066ff',
+            backgroundColor: isProcessing ? '#ff6b35' : isSpeaking ? '#4CAF50' : '#0066ff',
             transform: [
               {
-                scale: panAnim.interpolate({ inputRange: [0, 1], outputRange: [1, isRecording ? 1.06 : 1] }),
+                scale: Animated.multiply(
+                  panAnim.interpolate({ inputRange: [0, 1], outputRange: [1, isRecording ? 1.06 : 1] }),
+                  scaleAnim
+                ),
               },
             ],
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Text style={styles.micIcon}>🎙️</Text>
+          <Text style={styles.micIcon}>
+            {isProcessing ? '⚡' : isSpeaking ? '🔊' : '●'}
+          </Text>
         </Animated.View>
       </Pressable>
 
@@ -145,7 +179,7 @@ export default function RecordingScreen() {
         onPress={() => router.push('/notes')}
         android_ripple={{ color: 'rgba(255,255,255,0.1)', borderless: true }}
       >
-        <Text style={styles.floatingButtonText}>📝</Text>
+        <Text style={styles.floatingButtonText}>☰</Text>
       </Pressable>
 
       {/* Review Modal */}
@@ -172,7 +206,20 @@ export default function RecordingScreen() {
                   await saveNote({ id: String(now), text: transcript.trim(), createdAt: now, modifiedAt: now });
                   setShowReview(false);
                   setTranscript('');
-                  Speech.speak('Note saved successfully');
+                  
+                  // Speaking animation
+                  setIsSpeaking(true);
+                  Speech.speak('Note saved successfully', { 
+                    rate: 1.0, 
+                    onDone: () => {
+                      setIsSpeaking(false);
+                      // Restart recorder after saving
+                      setTimeout(() => {
+                        setElapsedMs(0);
+                        setTranscript('');
+                      }, 500);
+                    }
+                  });
                 }}
               >
                 <Text style={styles.actionText}>Save</Text>
@@ -218,7 +265,8 @@ const styles = StyleSheet.create({
   },
   micIcon: {
     color: '#fff',
-    fontSize: 48,
+    fontSize: 64,
+    fontWeight: 'bold',
   },
   hint: {
     color: '#666',
@@ -241,7 +289,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   floatingButtonText: {
-    fontSize: 24,
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   modalBackdrop: {
     flex: 1,

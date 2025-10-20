@@ -34,4 +34,16 @@ export async function saveNote(note: MurmurNote): Promise<void> {
   await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(next));
 }
 
+export async function updateNote(updatedNote: MurmurNote): Promise<void> {
+  const existing = await getAllNotes();
+  const next = existing.map(note => note.id === updatedNote.id ? updatedNote : note);
+  await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(next));
+}
+
+export async function deleteNote(noteId: string): Promise<void> {
+  const existing = await getAllNotes();
+  const next = existing.filter(note => note.id !== noteId);
+  await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(next));
+}
+
 
