@@ -61,8 +61,9 @@ export default function DrawingModal({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
       onRequestClose={handleClose}
+      statusBarTranslucent={false}
     >
       <StatusBar barStyle="light-content" />
       <View style={styles.container}>
@@ -133,6 +134,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0f1419',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   header: {
     flexDirection: 'row',

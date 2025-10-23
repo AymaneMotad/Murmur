@@ -45,6 +45,8 @@ export default function DrawingCanvas({
     onMoveShouldSetPanResponder: () => true,
     onStartShouldSetPanResponderCapture: () => true,
     onMoveShouldSetPanResponderCapture: () => true,
+    onPanResponderTerminationRequest: () => false,
+    onShouldBlockNativeResponder: () => true,
     onPanResponderGrant: (evt) => {
       const { locationX, locationY } = evt.nativeEvent;
       setIsDrawing(true);
@@ -57,9 +59,10 @@ export default function DrawingCanvas({
         
         setCurrentStroke(prev => {
           // Add point if it's different enough from the last point
+          // Increased threshold for better performance on real devices
           if (prev.length === 0 || 
-              Math.abs(prev[prev.length - 1].x - newPoint.x) > 0.1 || 
-              Math.abs(prev[prev.length - 1].y - newPoint.y) > 0.1) {
+              Math.abs(prev[prev.length - 1].x - newPoint.x) > 1 || 
+              Math.abs(prev[prev.length - 1].y - newPoint.y) > 1) {
             return [...prev, newPoint];
           }
           return prev;
@@ -123,7 +126,7 @@ export default function DrawingCanvas({
         Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
       );
       
-      if (distance > 0.1) { // Only render if distance is meaningful
+      if (distance > 1) { // Only render if distance is meaningful - optimized for real devices
         const angle = Math.atan2(end.y - start.y, end.x - start.x);
         const midX = (start.x + end.x) / 2;
         const midY = (start.y + end.y) / 2;
@@ -183,7 +186,7 @@ export default function DrawingCanvas({
         Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
       );
       
-      if (distance > 0.1) { // Only render if distance is meaningful
+      if (distance > 1) { // Only render if distance is meaningful - optimized for real devices
         const angle = Math.atan2(end.y - start.y, end.x - start.x);
         const midX = (start.x + end.x) / 2;
         const midY = (start.y + end.y) / 2;
