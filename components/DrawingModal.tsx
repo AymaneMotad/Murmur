@@ -39,13 +39,16 @@ export default function DrawingModal({
 
   const handleClear = useCallback(() => {
     setCurrentStrokes([]);
-  }, []);
+    handleDrawingChange([]);
+  }, [handleDrawingChange]);
 
   const handleUndo = useCallback(() => {
     if (currentStrokes.length > 0) {
-      setCurrentStrokes(currentStrokes.slice(0, -1));
+      const newStrokes = currentStrokes.slice(0, -1);
+      setCurrentStrokes(newStrokes);
+      handleDrawingChange(newStrokes);
     }
-  }, [currentStrokes]);
+  }, [currentStrokes, handleDrawingChange]);
 
   const handleSave = useCallback(() => {
     onSave(currentStrokes);
@@ -86,7 +89,7 @@ export default function DrawingModal({
             width={screenWidth}
             height={CANVAS_HEIGHT}
             onDrawingChange={handleDrawingChange}
-            initialStrokes={initialDrawing || []}
+            initialStrokes={currentStrokes}
             strokeColor={selectedColor}
             strokeWidth={selectedStrokeWidth}
           />
