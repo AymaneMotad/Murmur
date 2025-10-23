@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -14,10 +14,24 @@ export default function NoteDetailScreen() {
   const [editText, setEditText] = useState('');
   const [showDrawingModal, setShowDrawingModal] = useState(false);
   const [showMindMap, setShowMindMap] = useState(false);
+  
+  // Auto-save and undo functionality
+  const [previousText, setPreviousText] = useState('');
+  const [canUndo, setCanUndo] = useState(false);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadNote();
   }, [noteId]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const loadNote = async () => {
     try {
@@ -26,6 +40,8 @@ export default function NoteDetailScreen() {
       if (foundNote) {
         setNote(foundNote);
         setEditText(foundNote.text);
+        setPreviousText(foundNote.text);
+        setCanUndo(false);
       } else {
         Alert.alert('Error', 'Note not found', [
           { text: 'OK', onPress: () => router.back() }
@@ -41,21 +57,50 @@ export default function NoteDetailScreen() {
     }
   };
 
-  const handleSaveEdit = async () => {
-    if (!note || !editText.trim()) return;
+  const autoSave = async (text: string) => {
+    if (!note) return;
     
     try {
       const updatedNote = {
         ...note,
-        text: editText.trim(),
+        text: text.trim(),
         modifiedAt: Date.now(),
       };
       await updateNote(updatedNote);
       setNote(updatedNote);
-      setIsEditing(false);
     } catch (error) {
-      console.error('Failed to update note:', error);
-      Alert.alert('Error', 'Failed to save note');
+      console.error('Failed to auto-save note:', error);
+    }
+  };
+
+  const handleTextChange = (text: string) => {
+    setEditText(text);
+    setCanUndo(true);
+    
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    // Set new timeout for auto-save (500ms delay)
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      autoSave(text);
+    }, 500);
+  };
+
+  const handleUndo = () => {
+    if (canUndo && previousText !== editText) {
+      setEditText(previousText);
+      setCanUndo(false);
+      // Auto-save the reverted text
+      autoSave(previousText);
+    }
+  };
+
+  const handleStartEditing = () => {
+    if (note) {
+      setPreviousText(editText);
+      setIsEditing(true);
     }
   };
 
@@ -163,14 +208,21 @@ export default function NoteDetailScreen() {
             {formatDate(note.createdAt)}
           </Text>
         </View>
-        <Pressable onPress={handleDeleteNote} style={styles.deleteButton}>
-          <View style={styles.deleteIcon}>
-            <View style={styles.deleteIconBody} />
-            <View style={styles.deleteIconLid} />
-            <View style={styles.deleteIconLine1} />
-            <View style={styles.deleteIconLine2} />
-          </View>
-        </Pressable>
+        <View style={styles.headerActions}>
+          {isEditing && canUndo && (
+            <Pressable onPress={handleUndo} style={styles.undoHeaderButton}>
+              <Text style={styles.undoHeaderText}>↶</Text>
+            </Pressable>
+          )}
+          <Pressable onPress={handleDeleteNote} style={styles.deleteButton}>
+            <View style={styles.deleteIcon}>
+              <View style={styles.deleteIconBody} />
+              <View style={styles.deleteIconLid} />
+              <View style={styles.deleteIconLine1} />
+              <View style={styles.deleteIconLine2} />
+            </View>
+          </Pressable>
+        </View>
       </View>
 
       {/* Content */}
@@ -181,32 +233,15 @@ export default function NoteDetailScreen() {
               style={styles.editInput}
               multiline
               value={editText}
-              placeholder="Edit your note..."
+              placeholder="Start typing your note..."
               placeholderTextColor="#666"
-              onChangeText={setEditText}
+              onChangeText={handleTextChange}
               autoFocus
             />
-            <View style={styles.editActions}>
-              <Pressable 
-                style={[styles.actionBtn, styles.cancelBtn]} 
-                onPress={() => {
-                  setIsEditing(false);
-                  setEditText(note.text);
-                }}
-              >
-                <Text style={styles.actionText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.actionBtn, styles.saveBtn]}
-                onPress={handleSaveEdit}
-              >
-                <Text style={styles.actionText}>Save</Text>
-              </Pressable>
-            </View>
           </View>
         ) : (
           <View style={styles.noteContainer}>
-            <Pressable onPress={() => setIsEditing(true)} style={styles.noteTextContainer}>
+            <Pressable onPress={handleStartEditing} style={styles.noteTextContainer}>
               <Text style={styles.noteText}>{note.text}</Text>
             </Pressable>
             
@@ -305,6 +340,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   headerTitle: {
     color: '#ffffff',
     fontSize: 22,
@@ -317,6 +357,21 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 2,
     letterSpacing: 0.3,
+  },
+  undoHeaderButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#2a2f38',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#3a3f48',
+  },
+  undoHeaderText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   deleteButton: {
     width: 32,
@@ -422,28 +477,6 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     minHeight: 200,
     textAlignVertical: 'top',
-  },
-  editActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-    justifyContent: 'flex-end',
-  },
-  actionBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  cancelBtn: {
-    backgroundColor: '#2a2f38',
-  },
-  saveBtn: {
-    backgroundColor: '#0066ff',
-  },
-  actionText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   bottomActions: {
     position: 'absolute',
