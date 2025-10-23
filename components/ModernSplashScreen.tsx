@@ -89,59 +89,48 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
     content: {
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 32,
+      paddingHorizontal: 40,
+      width: '100%',
     },
     logoContainer: {
-      marginBottom: 40,
+      marginBottom: 60,
       alignItems: 'center',
     },
     logo: {
-      width: 140,
-      height: 140,
-      borderRadius: 35,
+      width: 180,
+      height: 180,
+      borderRadius: 45,
       backgroundColor: theme.primary,
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: theme.primary,
-      shadowOffset: { width: 0, height: 20 },
-      shadowOpacity: 0.4,
-      shadowRadius: 30,
-      elevation: 20,
+      shadowOffset: { width: 0, height: 25 },
+      shadowOpacity: 0.5,
+      shadowRadius: 40,
+      elevation: 25,
     },
     logoText: {
-      fontSize: 64,
+      fontSize: 80,
       fontWeight: '900',
       color: theme.textInverse,
-      letterSpacing: -2,
-    },
-    waveContainer: {
-      position: 'relative',
-      height: 120,
-      marginBottom: 50,
-      justifyContent: 'center',
-    },
-    waveBar: {
-      position: 'absolute',
-      width: 4,
-      borderRadius: 2,
-      bottom: 0,
+      letterSpacing: -3,
     },
     appName: {
-      fontSize: 48,
+      fontSize: 56,
       fontWeight: '900',
       color: theme.text,
       textAlign: 'center',
-      marginBottom: 16,
-      letterSpacing: -1.5,
+      marginBottom: 20,
+      letterSpacing: -2,
     },
     tagline: {
-      fontSize: 22,
-      fontWeight: '600',
+      fontSize: 24,
+      fontWeight: '500',
       color: theme.textSecondary,
       textAlign: 'center',
-      marginBottom: 40,
-      lineHeight: 30,
-      maxWidth: 320,
+      marginBottom: 60,
+      lineHeight: 32,
+      maxWidth: 300,
     },
     loadingContainer: {
       flexDirection: 'row',
@@ -149,57 +138,20 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
       justifyContent: 'center',
     },
     loadingDot: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
+      width: 16,
+      height: 16,
+      borderRadius: 8,
       backgroundColor: theme.primary,
-      marginHorizontal: 6,
-    },
-    featureText: {
-      fontSize: 16,
-      fontWeight: '400',
-      color: theme.textTertiary,
-      textAlign: 'center',
-      marginTop: 20,
-      lineHeight: 22,
+      marginHorizontal: 8,
     },
   });
 
-  const waveBars = Array.from({ length: 9 }, (_, i) => {
-    const barWidth = 4;
-    const barSpacing = 6;
-    const startX = (width - (9 * barWidth + 8 * barSpacing)) / 2;
-    const x = startX + i * (barWidth + barSpacing);
-    
-    // Different heights for wave effect
-    const heights = [30, 50, 70, 90, 110, 90, 70, 50, 30];
-    const barHeight = heights[i];
-    
-    return (
-      <Animated.View
-        key={i}
-        style={[
-          styles.waveBar,
-          {
-            left: x,
-            height: barHeight,
-            backgroundColor: theme.primary,
-            transform: [
-              {
-                scaleY: waveAnim.interpolate({
-                  inputRange: [0, 0.5, 1],
-                  outputRange: [0.2, 1.3, 0.2],
-                }),
-              },
-            ],
-          },
-        ]}
-      />
-    );
-  });
 
   return (
     <View style={styles.container}>
+      {/* Background gradient effect */}
+      <View style={styles.backgroundGradient} />
+      
       <Animated.View 
         style={[
           styles.content,
@@ -209,7 +161,7 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
           },
         ]}
       >
-        {/* Logo with pulse animation */}
+        {/* Main logo with enhanced animation */}
         <Animated.View 
           style={[
             styles.logoContainer,
@@ -219,7 +171,7 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
                 {
                   scale: logoAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [0.3, 1],
+                    outputRange: [0.5, 1],
                   }),
                 },
                 {
@@ -234,24 +186,25 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
           </View>
         </Animated.View>
         
-        {/* Audio wave visualization */}
-        <View style={styles.waveContainer}>
-          {waveBars}
-        </View>
-        
-        {/* App name */}
+        {/* App name with better typography */}
         <Text style={styles.appName}>Murmur</Text>
         
-        {/* Tagline */}
-        <Text style={styles.tagline}>Your thoughts, amplified ✨</Text>
+        {/* Clean tagline */}
+        <Text style={styles.tagline}>Your thoughts, amplified</Text>
         
-        {/* Feature highlight */}
-        <Text style={styles.featureText}>
-          Voice notes • Smart transcription • Beautiful organization
-        </Text>
-        
-        {/* Loading indicator */}
+        {/* Simple loading indicator */}
         <View style={styles.loadingContainer}>
+          <Animated.View 
+            style={[
+              styles.loadingDot,
+              {
+                opacity: waveAnim.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [0.4, 1, 0.4],
+                }),
+              },
+            ]}
+          />
           <Animated.View 
             style={[
               styles.loadingDot,
@@ -270,17 +223,6 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
                 opacity: waveAnim.interpolate({
                   inputRange: [0, 0.5, 1],
                   outputRange: [0.2, 1, 0.2],
-                }),
-              },
-            ]}
-          />
-          <Animated.View 
-            style={[
-              styles.loadingDot,
-              {
-                opacity: waveAnim.interpolate({
-                  inputRange: [0, 0.5, 1],
-                  outputRange: [0.1, 1, 0.1],
                 }),
               },
             ]}
