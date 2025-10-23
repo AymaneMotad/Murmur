@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, Animated } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, Animated, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserPreferences, saveUserPreferences, UserPreferences } from '@/lib/storage';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -72,18 +73,39 @@ export default function SettingsScreen() {
   };
 
   const handleResetOnboarding = async () => {
-    try {
-      const preferences = await getUserPreferences();
-      const updatedPreferences: UserPreferences = {
-        ...preferences,
-        hasCompletedOnboarding: false,
-      };
-      await saveUserPreferences(updatedPreferences);
-      // Navigate to splash screen to restart the flow
-      router.replace('/splash');
-    } catch (error) {
-      console.error('Error resetting onboarding:', error);
-    }
+    Alert.alert(
+      'Reset App Data',
+      'This will completely clear all your notes, drawings, and app data. This action cannot be undone. Are you sure?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset Everything',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Clear all app data completely
+              await AsyncStorage.clear();
+              
+              // Reset to default preferences
+              const defaultPreferences: UserPreferences = {
+                selectedLanguage: 'en-US',
+                hasCompletedOnboarding: false,
+                themeMode: 'system',
+              };
+              await saveUserPreferences(defaultPreferences);
+              
+              // Navigate to splash screen to restart the flow
+              router.replace('/splash');
+            } catch (error) {
+              console.error('Error resetting onboarding:', error);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const styles = StyleSheet.create({
@@ -342,8 +364,8 @@ export default function SettingsScreen() {
           >
             <Text style={styles.settingIcon}>🔄</Text>
             <View style={styles.settingTextContainer}>
-              <Text style={styles.settingTitle}>Reset Onboarding</Text>
-              <Text style={styles.settingSubtitle}>Show onboarding flow again</Text>
+              <Text style={styles.settingTitle}>Clear All Data</Text>
+              <Text style={styles.settingSubtitle}>Reset app to factory settings</Text>
             </View>
           </Pressable>
         </View>
