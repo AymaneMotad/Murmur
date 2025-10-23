@@ -42,6 +42,7 @@ export default function ModernOnboardingScreen() {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
   const [currentStep, setCurrentStep] = useState(0);
+  const [stepAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
     // Get device language using a fallback approach
@@ -97,6 +98,74 @@ export default function ModernOnboardingScreen() {
     setSelectedLanguage(languageCode);
   };
 
+  const handleNext = () => {
+    if (currentStep < 2) {
+      // Animate out current step
+      Animated.parallel([
+        Animated.timing(stepAnim, {
+          toValue: -50,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setCurrentStep(currentStep + 1);
+        // Reset and animate in next step
+        stepAnim.setValue(50);
+        Animated.parallel([
+          Animated.timing(stepAnim, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 0) {
+      // Animate out current step
+      Animated.parallel([
+        Animated.timing(stepAnim, {
+          toValue: 50,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setCurrentStep(currentStep - 1);
+        // Reset and animate in previous step
+        stepAnim.setValue(-50);
+        Animated.parallel([
+          Animated.timing(stepAnim, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    }
+  };
+
   const handleContinue = async () => {
     try {
       const preferences: UserPreferences = {
@@ -118,22 +187,22 @@ export default function ModernOnboardingScreen() {
 
   const features = [
     {
-      icon: '🎤',
+      icon: '🎙️',
       title: 'Voice-First Design',
       description: 'Capture thoughts instantly with your voice. Perfect for meetings, brainstorming, or quick ideas.',
     },
     {
-      icon: '🧠',
+      icon: '✨',
       title: 'Smart Transcription',
       description: 'AI-powered speech recognition that understands context and delivers accurate transcriptions.',
     },
     {
-      icon: '📊',
+      icon: '🗂️',
       title: 'Beautiful Organization',
       description: 'Visualize your thoughts with mind maps, graphs, and intelligent categorization.',
     },
     {
-      icon: '⚡',
+      icon: '🚀',
       title: 'Lightning Fast',
       description: 'From voice to organized notes in seconds. No more fumbling with keyboards.',
     },
@@ -144,15 +213,25 @@ export default function ModernOnboardingScreen() {
       flex: 1,
       backgroundColor: theme.background,
     },
+    scrollContainer: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+    },
     content: {
       flex: 1,
       paddingHorizontal: 24,
       paddingTop: 60,
-      paddingBottom: 40,
+      paddingBottom: 20,
+    },
+    stepContent: {
+      flex: 1,
+      justifyContent: 'center',
     },
     header: {
       alignItems: 'center',
-      marginBottom: 40,
+      marginBottom: 30,
     },
     logo: {
       width: 80,
@@ -189,15 +268,15 @@ export default function ModernOnboardingScreen() {
       marginBottom: 40,
     },
     featuresContainer: {
-      marginBottom: 40,
+      marginBottom: 20,
     },
     featureItem: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       backgroundColor: theme.surface,
-      borderRadius: 16,
-      padding: 20,
-      marginBottom: 16,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
       borderWidth: 1,
       borderColor: theme.border,
     },
@@ -210,15 +289,15 @@ export default function ModernOnboardingScreen() {
       flex: 1,
     },
     featureTitle: {
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: '700',
       color: theme.text,
-      marginBottom: 6,
+      marginBottom: 4,
     },
     featureDescription: {
-      fontSize: 15,
+      fontSize: 14,
       color: theme.textSecondary,
-      lineHeight: 22,
+      lineHeight: 20,
     },
     deviceLanguageContainer: {
       backgroundColor: theme.surface,
@@ -240,6 +319,32 @@ export default function ModernOnboardingScreen() {
     },
     languageListContent: {
       paddingBottom: 20,
+    },
+    finalFeaturesContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginTop: 40,
+      paddingHorizontal: 20,
+    },
+    finalFeatureItem: {
+      alignItems: 'center',
+      flex: 1,
+    },
+    finalFeatureIcon: {
+      fontSize: 32,
+      marginBottom: 12,
+    },
+    finalFeatureText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.text,
+      textAlign: 'center',
+    },
+    navigationContainer: {
+      paddingHorizontal: 24,
+      paddingBottom: 40,
+      paddingTop: 30,
+      backgroundColor: theme.background,
     },
     languageItem: {
       backgroundColor: theme.surface,
@@ -295,12 +400,50 @@ export default function ModernOnboardingScreen() {
       fontWeight: 'bold',
     },
     buttonContainer: {
-      paddingTop: 16,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 16,
+    },
+    backButton: {
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      paddingVertical: 18,
+      paddingHorizontal: 24,
+      borderWidth: 1,
+      borderColor: theme.border,
+      flex: 1,
+      alignItems: 'center',
+    },
+    backButtonText: {
+      color: theme.text,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    nextButton: {
+      backgroundColor: theme.primary,
+      borderRadius: 16,
+      paddingVertical: 18,
+      paddingHorizontal: 24,
+      flex: 2,
+      alignItems: 'center',
+      shadowColor: theme.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    nextButtonText: {
+      color: theme.textInverse,
+      fontSize: 16,
+      fontWeight: '700',
     },
     continueButton: {
       backgroundColor: theme.primary,
       borderRadius: 16,
       paddingVertical: 18,
+      paddingHorizontal: 24,
+      flex: 2,
       alignItems: 'center',
       shadowColor: theme.primary,
       shadowOffset: { width: 0, height: 6 },
@@ -310,13 +453,13 @@ export default function ModernOnboardingScreen() {
     },
     continueButtonText: {
       color: theme.textInverse,
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: '700',
     },
     stepIndicator: {
       flexDirection: 'row',
       justifyContent: 'center',
-      marginBottom: 32,
+      marginBottom: 20,
     },
     stepDot: {
       width: 8,
@@ -330,6 +473,135 @@ export default function ModernOnboardingScreen() {
     },
   });
 
+  const renderStep = () => {
+    switch (currentStep) {
+      case 0:
+        return (
+          <View style={styles.stepContent}>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.logo}>
+                <Text style={styles.logoText}>M</Text>
+              </View>
+              <Text style={styles.title}>Welcome to Murmur</Text>
+              <Text style={styles.subtitle}>
+                Transform your voice into organized, beautiful notes ✨
+              </Text>
+            </View>
+
+            {/* Features showcase */}
+            <View style={styles.featuresContainer}>
+              {features.map((feature, index) => (
+                <View key={index} style={styles.featureItem}>
+                  <Text style={styles.featureIcon}>{feature.icon}</Text>
+                  <View style={styles.featureContent}>
+                    <Text style={styles.featureTitle}>{feature.title}</Text>
+                    <Text style={styles.featureDescription}>{feature.description}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        );
+
+      case 1:
+        return (
+          <View style={styles.stepContent}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Choose Your Language</Text>
+              <Text style={styles.subtitle}>
+                Select your preferred language for voice recognition
+              </Text>
+            </View>
+
+            {/* Device language indicator */}
+            <View style={styles.deviceLanguageContainer}>
+              <Text style={styles.deviceLanguageLabel}>
+                📱 Your device language: {getLanguageDisplayName(deviceLanguage)}
+              </Text>
+            </View>
+
+            {/* Language selection */}
+            <ScrollView 
+              style={styles.languageList}
+              showsVerticalScrollIndicator={true}
+              contentContainerStyle={styles.languageListContent}
+            >
+              {SUPPORTED_LANGUAGES.map((language) => (
+                <Pressable
+                  key={language.code}
+                  style={[
+                    styles.languageItem,
+                    selectedLanguage === language.code && styles.languageItemSelected,
+                  ]}
+                  onPress={() => handleLanguageSelect(language.code)}
+                >
+                  <View style={styles.languageItemContent}>
+                    <Text style={styles.languageFlag}>{language.flag}</Text>
+                    <View style={styles.languageTextContainer}>
+                      <Text style={[
+                        styles.languageName,
+                        selectedLanguage === language.code && styles.languageNameSelected
+                      ]}>
+                        {language.name}
+                      </Text>
+                      <Text style={[
+                        styles.languageNativeName,
+                        selectedLanguage === language.code && styles.languageNativeNameSelected
+                      ]}>
+                        {language.nativeName}
+                      </Text>
+                    </View>
+                    {selectedLanguage === language.code && (
+                      <View style={styles.selectedIndicator}>
+                        <Text style={styles.checkmark}>✓</Text>
+                      </View>
+                    )}
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        );
+
+      case 2:
+        return (
+          <View style={styles.stepContent}>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.logo}>
+                <Text style={styles.logoText}>M</Text>
+              </View>
+              <Text style={styles.title}>You're All Set!</Text>
+              <Text style={styles.subtitle}>
+                Ready to start capturing your thoughts with {getLanguageDisplayName(selectedLanguage)}
+              </Text>
+            </View>
+
+            {/* Final features highlight */}
+            <View style={styles.finalFeaturesContainer}>
+              <View style={styles.finalFeatureItem}>
+                <Text style={styles.finalFeatureIcon}>🎙️</Text>
+                <Text style={styles.finalFeatureText}>Tap to record</Text>
+              </View>
+              <View style={styles.finalFeatureItem}>
+                <Text style={styles.finalFeatureIcon}>✨</Text>
+                <Text style={styles.finalFeatureText}>AI transcription</Text>
+              </View>
+              <View style={styles.finalFeatureItem}>
+                <Text style={styles.finalFeatureIcon}>🗂️</Text>
+                <Text style={styles.finalFeatureText}>Smart organization</Text>
+              </View>
+            </View>
+          </View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style={isDark ? "light" : "dark"} />
@@ -339,92 +611,52 @@ export default function ModernOnboardingScreen() {
           styles.content,
           {
             opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
+            transform: [{ translateY: stepAnim }],
           },
         ]}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>M</Text>
-          </View>
-          <Text style={styles.title}>Welcome to Murmur</Text>
-          <Text style={styles.subtitle}>
-            Transform your voice into organized, beautiful notes ✨
-          </Text>
-        </View>
+        {renderStep()}
+      </Animated.View>
 
-        {/* Features showcase */}
-        <View style={styles.featuresContainer}>
-          {features.map((feature, index) => (
-            <View key={index} style={styles.featureItem}>
-              <Text style={styles.featureIcon}>{feature.icon}</Text>
-              <View style={styles.featureContent}>
-                <Text style={styles.featureTitle}>{feature.title}</Text>
-                <Text style={styles.featureDescription}>{feature.description}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* Device language indicator */}
-        <View style={styles.deviceLanguageContainer}>
-          <Text style={styles.deviceLanguageLabel}>
-            📱 Your device language: {getLanguageDisplayName(deviceLanguage)}
-          </Text>
-        </View>
-
-        {/* Language selection */}
-        <ScrollView 
-          style={styles.languageList}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.languageListContent}
-        >
-          {SUPPORTED_LANGUAGES.map((language) => (
-            <Pressable
-              key={language.code}
+      {/* Navigation */}
+      <View style={styles.navigationContainer}>
+        {/* Step indicator */}
+        <View style={styles.stepIndicator}>
+          {[0, 1, 2].map((step) => (
+            <View
+              key={step}
               style={[
-                styles.languageItem,
-                selectedLanguage === language.code && styles.languageItemSelected,
+                styles.stepDot,
+                currentStep === step && styles.stepDotActive,
               ]}
-              onPress={() => handleLanguageSelect(language.code)}
-            >
-              <View style={styles.languageItemContent}>
-                <Text style={styles.languageFlag}>{language.flag}</Text>
-                <View style={styles.languageTextContainer}>
-                  <Text style={[
-                    styles.languageName,
-                    selectedLanguage === language.code && styles.languageNameSelected
-                  ]}>
-                    {language.name}
-                  </Text>
-                  <Text style={[
-                    styles.languageNativeName,
-                    selectedLanguage === language.code && styles.languageNativeNameSelected
-                  ]}>
-                    {language.nativeName}
-                  </Text>
-                </View>
-                {selectedLanguage === language.code && (
-                  <View style={styles.selectedIndicator}>
-                    <Text style={styles.checkmark}>✓</Text>
-                  </View>
-                )}
-              </View>
-            </Pressable>
+            />
           ))}
-        </ScrollView>
+        </View>
 
-        {/* Continue button */}
+        {/* Navigation buttons */}
         <View style={styles.buttonContainer}>
+          {currentStep > 0 && (
+            <Pressable
+              style={styles.backButton}
+              onPress={handleBack}
+            >
+              <Text style={styles.backButtonText}>← Back</Text>
+            </Pressable>
+          )}
+          
           <Pressable
-            style={styles.continueButton}
-            onPress={handleContinue}
+            style={[
+              styles.nextButton,
+              currentStep === 2 && styles.continueButton,
+            ]}
+            onPress={currentStep === 2 ? handleContinue : handleNext}
           >
-            <Text style={styles.continueButtonText}>Start Capturing Thoughts</Text>
+            <Text style={styles.nextButtonText}>
+              {currentStep === 2 ? 'Start Capturing Thoughts' : 'Next →'}
+            </Text>
           </Pressable>
         </View>
-      </Animated.View>
+      </View>
     </View>
   );
 }

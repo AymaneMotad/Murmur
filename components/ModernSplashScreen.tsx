@@ -96,28 +96,28 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
       alignItems: 'center',
     },
     logo: {
-      width: 120,
-      height: 120,
-      borderRadius: 30,
+      width: 140,
+      height: 140,
+      borderRadius: 35,
       backgroundColor: theme.primary,
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: theme.primary,
-      shadowOffset: { width: 0, height: 16 },
-      shadowOpacity: 0.3,
-      shadowRadius: 24,
-      elevation: 16,
+      shadowOffset: { width: 0, height: 20 },
+      shadowOpacity: 0.4,
+      shadowRadius: 30,
+      elevation: 20,
     },
     logoText: {
-      fontSize: 48,
-      fontWeight: '800',
+      fontSize: 64,
+      fontWeight: '900',
       color: theme.textInverse,
-      letterSpacing: -1,
+      letterSpacing: -2,
     },
     waveContainer: {
       position: 'relative',
-      height: 100,
-      marginBottom: 40,
+      height: 120,
+      marginBottom: 50,
       justifyContent: 'center',
     },
     waveBar: {
@@ -127,21 +127,21 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
       bottom: 0,
     },
     appName: {
-      fontSize: 42,
-      fontWeight: '800',
+      fontSize: 48,
+      fontWeight: '900',
       color: theme.text,
       textAlign: 'center',
-      marginBottom: 12,
-      letterSpacing: -1.2,
+      marginBottom: 16,
+      letterSpacing: -1.5,
     },
     tagline: {
-      fontSize: 20,
-      fontWeight: '500',
+      fontSize: 22,
+      fontWeight: '600',
       color: theme.textSecondary,
       textAlign: 'center',
-      marginBottom: 60,
-      lineHeight: 28,
-      maxWidth: 300,
+      marginBottom: 40,
+      lineHeight: 30,
+      maxWidth: 320,
     },
     loadingContainer: {
       flexDirection: 'row',
@@ -149,11 +149,11 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
       justifyContent: 'center',
     },
     loadingDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
+      width: 12,
+      height: 12,
+      borderRadius: 6,
       backgroundColor: theme.primary,
-      marginHorizontal: 4,
+      marginHorizontal: 6,
     },
     featureText: {
       fontSize: 16,
@@ -172,7 +172,7 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
     const x = startX + i * (barWidth + barSpacing);
     
     // Different heights for wave effect
-    const heights = [20, 35, 50, 65, 80, 65, 50, 35, 20];
+    const heights = [30, 50, 70, 90, 110, 90, 70, 50, 30];
     const barHeight = heights[i];
     
     return (
