@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, GestureResponderEvent, Animated, Modal, TextInput } from 'react-native';
+import { View, Text, Pressable, StyleSheet, GestureResponderEvent, Animated, Modal, TextInput, PanResponder, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import { router } from 'expo-router';
 import { saveNote, getUserPreferences } from '@/lib/storage';
+import * as Haptics from 'expo-haptics';
 
 export default function RecordingScreen() {
   const [isRecording, setIsRecording] = useState(false);
@@ -18,6 +19,13 @@ export default function RecordingScreen() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const [selectedLanguage, setSelectedLanguage] = useState('en-US');
+  
+  // Swipe up animation values
+  const swipeAnim = useRef(new Animated.Value(0)).current;
+  const swipeHintAnim = useRef(new Animated.Value(0)).current;
+  const swipeProgress = useRef(new Animated.Value(0)).current;
+  const [isSwipeActive, setIsSwipeActive] = useState(false);
+  const [swipeDistance, setSwipeDistance] = useState(0);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -29,6 +37,28 @@ export default function RecordingScreen() {
     loop.start();
     return () => loop.stop();
   }, [panAnim]);
+
+  // Swipe hint animation
+  useEffect(() => {
+    if (!isRecording && !isProcessing) {
+      const hintLoop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(swipeHintAnim, { 
+            toValue: 1, 
+            duration: 2000, 
+            useNativeDriver: true 
+          }),
+          Animated.timing(swipeHintAnim, { 
+            toValue: 0, 
+            duration: 2000, 
+            useNativeDriver: true 
+          }),
+        ])
+      );
+      hintLoop.start();
+      return () => hintLoop.stop();
+    }
+  }, [isRecording, isProcessing, swipeHintAnim]);
 
   // Load user's selected language
   useEffect(() => {
@@ -132,11 +162,60 @@ export default function RecordingScreen() {
   }, [isRecording, startRecording, stopRecording]);
 
   const onSwipeUp = useCallback((e: GestureResponderEvent) => {
-    // MVP: provide audible feedback using TTS
-    setIsSpeaking(true);
-    Speech.speak('Recording started', { rate: 1.0, onDone: () => setIsSpeaking(false) });
     startRecording();
   }, [startRecording]);
+
+  // Pan responder for swipe up gesture
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => !isRecording && !isProcessing,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dy) > 10 && gestureState.dy < 0; // Only respond to upward swipes
+      },
+      onPanResponderGrant: () => {
+        setIsSwipeActive(true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy < 0) { // Only track upward movement
+          const distance = Math.abs(gestureState.dy);
+          setSwipeDistance(distance);
+          const progress = Math.min(distance / 100, 1); // Max progress at 100px
+          swipeProgress.setValue(progress);
+          swipeAnim.setValue(progress * 20); // Move up to 20px
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const distance = Math.abs(gestureState.dy);
+        const velocity = Math.abs(gestureState.vy);
+        
+        // Trigger recording if swipe distance > 60px or velocity > 0.5
+        if (distance > 60 || velocity > 0.5) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onSwipeUp({} as GestureResponderEvent);
+        }
+        
+        // Reset animations
+        Animated.parallel([
+          Animated.spring(swipeAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 8,
+          }),
+          Animated.spring(swipeProgress, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 8,
+          }),
+        ]).start();
+        
+        setIsSwipeActive(false);
+        setSwipeDistance(0);
+      },
+    })
+  ).current;
 
   const minutes = Math.floor(elapsedMs / 60000)
     .toString()
@@ -180,33 +259,94 @@ export default function RecordingScreen() {
 
         {/* Microphone Button */}
         <View style={styles.micContainer}>
-          <Pressable
-            onPress={onMicPress}
-            onLongPress={onSwipeUp}
-            style={({ pressed }) => [styles.micButton, pressed && styles.micButtonPressed]}
-            android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: true }}
-          >
+          {/* Swipe up hint animation */}
+          {!isRecording && !isProcessing && (
             <Animated.View
               style={[
-                styles.micButtonInner,
+                styles.swipeHint,
                 {
-                  backgroundColor: isProcessing ? '#ff6b35' : isSpeaking ? '#4CAF50' : '#0066ff',
+                  opacity: swipeHintAnim.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [0.3, 1, 0.3],
+                  }),
                   transform: [
                     {
-                      scale: Animated.multiply(
-                        panAnim.interpolate({ inputRange: [0, 1], outputRange: [1, isRecording ? 1.06 : 1] }),
-                        scaleAnim
-                      ),
+                      translateY: swipeHintAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, -8],
+                      }),
                     },
                   ],
-                }
+                },
               ]}
             >
-              <Text style={styles.micIcon}>
-                {isProcessing ? '⚡' : isSpeaking ? '🔊' : '●'}
-              </Text>
+              <Text style={styles.swipeHintText}>↑ Swipe up to record</Text>
             </Animated.View>
-          </Pressable>
+          )}
+
+          {/* Swipe progress indicator */}
+          {isSwipeActive && (
+            <Animated.View
+              style={[
+                styles.swipeProgress,
+                {
+                  opacity: swipeProgress,
+                  transform: [
+                    {
+                      scale: swipeProgress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.8, 1.2],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <View style={styles.swipeProgressBar} />
+            </Animated.View>
+          )}
+
+          <Animated.View
+            style={[
+              styles.micButtonWrapper,
+              {
+                transform: [
+                  {
+                    translateY: swipeAnim,
+                  },
+                ],
+              },
+            ]}
+            {...panResponder.panHandlers}
+          >
+            <Pressable
+              onPress={onMicPress}
+              style={({ pressed }) => [styles.micButton, pressed && styles.micButtonPressed]}
+              android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: true }}
+            >
+              <Animated.View
+                style={[
+                  styles.micButtonInner,
+                  {
+                    backgroundColor: isProcessing ? '#ff6b35' : isSpeaking ? '#4CAF50' : '#0066ff',
+                    transform: [
+                      {
+                        scale: Animated.multiply(
+                          panAnim.interpolate({ inputRange: [0, 1], outputRange: [1, isRecording ? 1.06 : 1] }),
+                          scaleAnim
+                        ),
+                      },
+                    ],
+                    shadowOpacity: isSwipeActive ? 0.6 : 0.3,
+                  },
+                ]}
+              >
+                <Text style={styles.micIcon}>
+                  {isProcessing ? '⚡' : isSpeaking ? '🔊' : '●'}
+                </Text>
+              </Animated.View>
+            </Pressable>
+          </Animated.View>
         </View>
 
         {/* Hint Text */}
@@ -241,7 +381,11 @@ export default function RecordingScreen() {
               onChangeText={setTranscript}
             />
             <View style={styles.modalActions}>
-              <Pressable style={[styles.actionBtn, styles.cancel]} onPress={() => { setShowReview(false); setTranscript(''); }}>
+              <Pressable style={[styles.actionBtn, styles.cancel]} onPress={() => { 
+                setShowReview(false); 
+                setTranscript(''); 
+                setElapsedMs(0); // Reset timer when discarding
+              }}>
                 <Text style={styles.actionText}>Discard</Text>
               </Pressable>
               <Pressable
@@ -346,6 +490,11 @@ const styles = StyleSheet.create({
   micContainer: {
     alignItems: 'center',
     marginBottom: 40,
+    position: 'relative',
+  },
+  micButtonWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   micButton: {
     padding: 8,
@@ -364,6 +513,44 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 12,
+  },
+  swipeHint: {
+    position: 'absolute',
+    top: -50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  swipeHintText: {
+    color: '#9BA1A6',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    backgroundColor: 'rgba(15, 20, 25, 0.8)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#2a2f38',
+  },
+  swipeProgress: {
+    position: 'absolute',
+    top: -30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 5,
+  },
+  swipeProgressBar: {
+    width: 4,
+    height: 20,
+    backgroundColor: '#0066ff',
+    borderRadius: 2,
+    shadowColor: '#0066ff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 4,
   },
   micIcon: {
     color: '#fff',
