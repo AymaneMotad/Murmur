@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, Alert, Modal, TextInput, Animated, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, Alert, Animated, PanResponder } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
 import { getAllNotes, MurmurNote, updateNote, deleteNote, DrawingStroke } from '@/lib/storage';
@@ -16,7 +16,6 @@ interface SwipeableNoteProps {
 const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, onAddDrawing, formatDate }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
-  const [isSwiping, setIsSwiping] = useState(false);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -24,7 +23,7 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, o
         return Math.abs(gestureState.dx) > 10;
       },
       onPanResponderGrant: () => {
-        setIsSwiping(true);
+        // Start swiping
       },
       onPanResponderMove: (_, gestureState) => {
         if (gestureState.dx < 0) {
@@ -33,7 +32,7 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, o
       },
       onPanResponderRelease: (_, gestureState) => {
         const { dx, vx } = gestureState;
-        setIsSwiping(false);
+        // End swiping
         
         if (dx < -100 || vx < -0.5) {
           // Swipe left to delete
@@ -68,7 +67,12 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, o
       <View style={styles.deleteBackground}>
         <View style={styles.deleteContent}>
           <View style={styles.deleteIconContainer}>
-            <Text style={styles.deleteIcon}>􀈑</Text>
+            <View style={styles.trashIcon}>
+              <View style={styles.trashBody} />
+              <View style={styles.trashLid} />
+              <View style={styles.trashLine1} />
+              <View style={styles.trashLine2} />
+            </View>
           </View>
           <Text style={styles.deleteText}>Delete</Text>
         </View>
@@ -85,10 +89,7 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, o
         ]}
         {...panResponder.panHandlers}
       >
-        <Pressable 
-          style={styles.noteContent} 
-          onPress={() => onEdit(item)}
-        >
+        <View style={styles.noteContent}>
           <View style={styles.noteHeader}>
             <View style={styles.noteMeta}>
               <View style={styles.noteDateContainer}>
@@ -118,16 +119,16 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, o
             </View>
           </View>
           
-          <Text style={styles.noteText} numberOfLines={0}>
-            {item.text}
-          </Text>
+          <Pressable onPress={() => onEdit(item)}>
+            <Text style={styles.noteText} numberOfLines={0}>
+              {item.text}
+            </Text>
+            {item.text.length > 200 && (
+              <Text style={styles.readMoreText}>Tap to open full view...</Text>
+            )}
+          </Pressable>
           
-          {item.text.length > 200 && (
-            <View style={styles.noteFooter}>
-              <Text style={styles.readMoreText}>Tap to read more</Text>
-            </View>
-          )}
-        </Pressable>
+        </View>
       </Animated.View>
     </View>
   );
@@ -136,8 +137,6 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, o
 export default function NotesScreen() {
   const [notes, setNotes] = useState<MurmurNote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingNote, setEditingNote] = useState<MurmurNote | null>(null);
-  const [editText, setEditText] = useState('');
   const [drawingNote, setDrawingNote] = useState<MurmurNote | null>(null);
   const [showDrawingModal, setShowDrawingModal] = useState(false);
 
@@ -163,27 +162,9 @@ export default function NotesScreen() {
   };
 
   const handleEditNote = (note: MurmurNote) => {
-    setEditingNote(note);
-    setEditText(note.text);
+    router.push(`/note-detail?noteId=${note.id}`);
   };
 
-  const handleSaveEdit = async () => {
-    if (!editingNote || !editText.trim()) return;
-    
-    try {
-      const updatedNote = {
-        ...editingNote,
-        text: editText.trim(),
-        modifiedAt: Date.now(),
-      };
-      await updateNote(updatedNote);
-      setEditingNote(null);
-      setEditText('');
-      loadNotes();
-    } catch (error) {
-      console.error('Failed to update note:', error);
-    }
-  };
 
   const handleAddDrawing = (note: MurmurNote) => {
     setDrawingNote(note);
@@ -191,7 +172,11 @@ export default function NotesScreen() {
   };
 
   const handleSaveDrawing = async (drawing: DrawingStroke[]) => {
-    if (!drawingNote) return;
+    console.log('handleSaveDrawing called with:', drawing);
+    if (!drawingNote) {
+      console.log('No drawingNote found');
+      return;
+    }
     
     try {
       const updatedNote = {
@@ -199,6 +184,7 @@ export default function NotesScreen() {
         drawing: drawing,
         modifiedAt: Date.now(),
       };
+      console.log('Updating note with drawing:', updatedNote);
       await updateNote(updatedNote);
       setDrawingNote(null);
       setShowDrawingModal(false);
@@ -290,7 +276,7 @@ export default function NotesScreen() {
           <Text style={styles.headerTitle}>Notes</Text>
           <Text style={styles.headerSubtitle}>{notes.length} {notes.length === 1 ? 'note' : 'notes'}</Text>
         </View>
-        <View style={styles.headerRight} />
+        <View style={styles.placeholder} />
       </View>
       
       {/* Notes List */}
@@ -304,37 +290,6 @@ export default function NotesScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
 
-      {/* Edit Modal */}
-      <Modal transparent visible={!!editingNote} animationType="slide" onRequestClose={() => setEditingNote(null)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Edit Note</Text>
-            <TextInput
-              style={styles.input}
-              multiline
-              value={editText}
-              placeholder="Edit your note..."
-              placeholderTextColor="#666"
-              onChangeText={setEditText}
-              autoFocus
-            />
-            <View style={styles.modalActions}>
-              <Pressable 
-                style={[styles.actionBtn, styles.cancel]} 
-                onPress={() => { setEditingNote(null); setEditText(''); }}
-              >
-                <Text style={styles.actionText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.actionBtn, styles.save]}
-                onPress={handleSaveEdit}
-              >
-                <Text style={styles.actionText}>Save</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       {/* Drawing Modal */}
       <DrawingModal
@@ -446,6 +401,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  trashIcon: {
+    width: 20,
+    height: 20,
+    position: 'relative',
+  },
+  trashBody: {
+    position: 'absolute',
+    width: 12,
+    height: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 2,
+    bottom: 0,
+    left: 4,
+  },
+  trashLid: {
+    position: 'absolute',
+    width: 14,
+    height: 2,
+    backgroundColor: '#ffffff',
+    borderRadius: 1,
+    top: 0,
+    left: 3,
+  },
+  trashLine1: {
+    position: 'absolute',
+    width: 2,
+    height: 4,
+    backgroundColor: '#ffffff',
+    top: 2,
+    left: 6,
+  },
+  trashLine2: {
+    position: 'absolute',
+    width: 2,
+    height: 4,
+    backgroundColor: '#ffffff',
+    top: 2,
+    left: 10,
+  },
   deleteText: {
     color: '#ffffff',
     fontSize: 14,
@@ -510,6 +504,13 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontWeight: '400',
     letterSpacing: 0.2,
+  },
+  readMoreText: {
+    color: '#0066ff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 8,
+    textAlign: 'right',
   },
   drawingIndicator: {
     backgroundColor: '#0066ff',
@@ -593,46 +594,8 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 16,
   },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
+  placeholder: {
+    width: 32,
+    height: 32,
   },
-  modalCard: {
-    backgroundColor: '#11151b',
-    padding: 16,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    minHeight: '50%',
-  },
-  modalTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  input: {
-    color: '#fff',
-    backgroundColor: '#0b0f14',
-    borderColor: '#222831',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    minHeight: 180,
-    textAlignVertical: 'top',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 12,
-    justifyContent: 'flex-end',
-  },
-  actionBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  save: { backgroundColor: '#0066ff' },
-  cancel: { backgroundColor: '#2a2f38' },
-  actionText: { color: '#fff', fontWeight: '600' },
 });

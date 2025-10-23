@@ -9,19 +9,13 @@ import {
   StatusBar,
 } from 'react-native';
 import DrawingCanvas from './DrawingCanvas';
-
-interface Stroke {
-  id: string;
-  path: string;
-  color: string;
-  strokeWidth: number;
-}
+import { DrawingStroke } from '@/lib/storage';
 
 interface DrawingModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (drawing: Stroke[]) => void;
-  initialDrawing?: Stroke[];
+  onSave: (drawing: DrawingStroke[]) => void;
+  initialDrawing?: DrawingStroke[];
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -33,32 +27,33 @@ export default function DrawingModal({
   onSave,
   initialDrawing = [],
 }: DrawingModalProps) {
-  const [strokes, setStrokes] = useState<Stroke[]>(initialDrawing);
+  const [currentStrokes, setCurrentStrokes] = useState<DrawingStroke[]>(initialDrawing || []);
+  
   const [selectedColor, setSelectedColor] = useState('#ffffff');
   const [selectedStrokeWidth, setSelectedStrokeWidth] = useState(3);
   const [isDarkBackground, setIsDarkBackground] = useState(true);
 
-  const handleDrawingChange = useCallback((newStrokes: Stroke[]) => {
-    setStrokes(newStrokes);
+  const handleDrawingChange = useCallback((newStrokes: DrawingStroke[]) => {
+    setCurrentStrokes(newStrokes);
   }, []);
 
   const handleClear = useCallback(() => {
-    setStrokes([]);
+    setCurrentStrokes([]);
   }, []);
 
   const handleUndo = useCallback(() => {
-    if (strokes.length > 0) {
-      setStrokes(strokes.slice(0, -1));
+    if (currentStrokes.length > 0) {
+      setCurrentStrokes(currentStrokes.slice(0, -1));
     }
-  }, [strokes]);
+  }, [currentStrokes]);
 
   const handleSave = useCallback(() => {
-    onSave(strokes);
+    onSave(currentStrokes);
     onClose();
-  }, [strokes, onSave, onClose]);
+  }, [currentStrokes, onSave, onClose]);
 
   const handleClose = useCallback(() => {
-    setStrokes(initialDrawing);
+    setCurrentStrokes(initialDrawing || []);
     onClose();
   }, [initialDrawing, onClose]);
 
@@ -90,7 +85,7 @@ export default function DrawingModal({
             width={screenWidth}
             height={CANVAS_HEIGHT}
             onDrawingChange={handleDrawingChange}
-            initialStrokes={strokes}
+            initialStrokes={initialDrawing || []}
             strokeColor={selectedColor}
             strokeWidth={selectedStrokeWidth}
           />

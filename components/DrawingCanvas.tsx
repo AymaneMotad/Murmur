@@ -1,5 +1,6 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, StyleSheet, PanResponder } from 'react-native';
+import { DrawingStroke } from '@/lib/storage';
 
 interface Point {
   x: number;
@@ -16,8 +17,8 @@ interface Stroke {
 interface DrawingCanvasProps {
   width: number;
   height: number;
-  onDrawingChange?: (strokes: Stroke[]) => void;
-  initialStrokes?: Stroke[];
+  onDrawingChange?: (strokes: DrawingStroke[]) => void;
+  initialStrokes?: DrawingStroke[];
   strokeColor?: string;
   strokeWidth?: number;
 }
@@ -30,13 +31,20 @@ export default function DrawingCanvas({
   strokeColor = '#ffffff',
   strokeWidth = 3,
 }: DrawingCanvasProps) {
-  const [strokes, setStrokes] = useState<Stroke[]>(initialStrokes);
+  const [strokes, setStrokes] = useState<DrawingStroke[]>(initialStrokes || []);
   const [currentStroke, setCurrentStroke] = useState<Point[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
+
+  // Update strokes when initialStrokes change
+  useEffect(() => {
+    setStrokes(initialStrokes || []);
+  }, [initialStrokes]);
 
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponderCapture: () => true,
+    onMoveShouldSetPanResponderCapture: () => true,
     onPanResponderGrant: (evt) => {
       const { locationX, locationY } = evt.nativeEvent;
       setIsDrawing(true);
@@ -45,12 +53,13 @@ export default function DrawingCanvas({
     onPanResponderMove: (evt) => {
       if (isDrawing) {
         const { locationX, locationY } = evt.nativeEvent;
+        const newPoint = { x: locationX, y: locationY };
+        
         setCurrentStroke(prev => {
-          const newPoint = { x: locationX, y: locationY };
-          // Only add point if it's different from the last point
+          // Add point if it's different enough from the last point
           if (prev.length === 0 || 
-              Math.abs(prev[prev.length - 1].x - newPoint.x) > 0.5 || 
-              Math.abs(prev[prev.length - 1].y - newPoint.y) > 0.5) {
+              Math.abs(prev[prev.length - 1].x - newPoint.x) > 0.1 || 
+              Math.abs(prev[prev.length - 1].y - newPoint.y) > 0.1) {
             return [...prev, newPoint];
           }
           return prev;
@@ -59,7 +68,7 @@ export default function DrawingCanvas({
     },
     onPanResponderRelease: () => {
       if (isDrawing && currentStroke.length > 0) {
-        const newStroke: Stroke = {
+        const newStroke: DrawingStroke = {
           id: Date.now().toString() + Math.random(),
           points: [...currentStroke],
           color: strokeColor,
@@ -67,6 +76,8 @@ export default function DrawingCanvas({
         };
         
         const updatedStrokes = [...strokes, newStroke];
+        console.log('Adding new stroke:', newStroke);
+        console.log('Updated strokes:', updatedStrokes);
         setStrokes(updatedStrokes);
         onDrawingChange?.(updatedStrokes);
       }
@@ -76,8 +87,10 @@ export default function DrawingCanvas({
     },
   });
 
-  const renderStroke = (stroke: Stroke) => {
-    if (stroke.points.length < 1) return null;
+  const renderStroke = (stroke: DrawingStroke) => {
+    if (!stroke || !stroke.points || stroke.points.length < 1) {
+      return null;
+    }
     
     // Handle single point strokes (dots)
     if (stroke.points.length === 1) {
@@ -110,7 +123,7 @@ export default function DrawingCanvas({
         Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
       );
       
-      if (distance > 0.5) { // Only render if distance is meaningful
+      if (distance > 0.1) { // Only render if distance is meaningful
         const angle = Math.atan2(end.y - start.y, end.x - start.x);
         const midX = (start.x + end.x) / 2;
         const midY = (start.y + end.y) / 2;
@@ -170,7 +183,7 @@ export default function DrawingCanvas({
         Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
       );
       
-      if (distance > 0.5) { // Only render if distance is meaningful
+      if (distance > 0.1) { // Only render if distance is meaningful
         const angle = Math.atan2(end.y - start.y, end.x - start.x);
         const midX = (start.x + end.x) / 2;
         const midY = (start.y + end.y) / 2;
@@ -203,7 +216,7 @@ export default function DrawingCanvas({
         style={styles.canvas}
         {...panResponder.panHandlers}
       >
-        {strokes.map(renderStroke)}
+        {strokes.filter(stroke => stroke && stroke.points).map(renderStroke)}
         {renderCurrentStroke()}
       </View>
     </View>
