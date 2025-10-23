@@ -6,8 +6,10 @@ import * as Speech from 'expo-speech';
 import { router } from 'expo-router';
 import { saveNote, getUserPreferences } from '@/lib/storage';
 import * as Haptics from 'expo-haptics';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function RecordingScreen() {
+  const { theme, isDark } = useTheme();
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -224,9 +226,275 @@ export default function RecordingScreen() {
     .toString()
     .padStart(2, '0');
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+      paddingHorizontal: 20,
+      paddingTop: 60,
+      paddingBottom: 40,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      marginBottom: 48,
+    },
+    headerLeft: {
+      flex: 1,
+    },
+    settingsButton: {
+      padding: 16,
+      borderRadius: 16,
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      shadowColor: theme.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    settingsButtonText: {
+      fontSize: 20,
+      color: theme.text,
+    },
+    title: {
+      color: theme.text,
+      fontSize: 36,
+      fontWeight: '700',
+      marginBottom: 12,
+      letterSpacing: -0.8,
+    },
+    subtitle: {
+      color: theme.textSecondary,
+      fontSize: 18,
+      lineHeight: 26,
+      maxWidth: 280,
+    },
+    mainContent: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    timerContainer: {
+      alignItems: 'center',
+      marginBottom: 80,
+    },
+    timer: {
+      color: theme.text,
+      fontSize: 56,
+      fontWeight: '300',
+      fontVariant: ['tabular-nums'],
+      letterSpacing: 3,
+    },
+    recordingIndicator: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 16,
+      backgroundColor: theme.error,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 24,
+      shadowColor: theme.error,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    recordingDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: theme.textInverse,
+      marginRight: 10,
+    },
+    recordingText: {
+      color: theme.textInverse,
+      fontSize: 14,
+      fontWeight: '600',
+      letterSpacing: 1.2,
+    },
+    micContainer: {
+      alignItems: 'center',
+      marginBottom: 60,
+      position: 'relative',
+    },
+    micButtonWrapper: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    micButton: {
+      padding: 12,
+    },
+    micButtonPressed: {
+      opacity: 0.9,
+    },
+    micButtonInner: {
+      width: 200,
+      height: 200,
+      borderRadius: 100,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: theme.primary,
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.25,
+      shadowRadius: 20,
+      elevation: 12,
+    },
+    swipeHint: {
+      position: 'absolute',
+      top: -50,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10,
+    },
+    swipeHintText: {
+      color: theme.textSecondary,
+      fontSize: 14,
+      fontWeight: '600',
+      letterSpacing: 0.5,
+      textAlign: 'center',
+      backgroundColor: theme.surface,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    swipeProgress: {
+      position: 'absolute',
+      top: -30,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 5,
+    },
+    swipeProgressBar: {
+      width: 4,
+      height: 20,
+      backgroundColor: theme.primary,
+      borderRadius: 2,
+      shadowColor: theme.primary,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.8,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    micIcon: {
+      color: theme.textInverse,
+      fontSize: 80,
+      fontWeight: 'bold',
+    },
+    hint: {
+      color: theme.textSecondary,
+      fontSize: 18,
+      textAlign: 'center',
+      lineHeight: 26,
+      maxWidth: 320,
+      fontWeight: '400',
+    },
+    bottomNav: {
+      alignItems: 'center',
+      paddingTop: 24,
+    },
+    notesButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.surface,
+      paddingHorizontal: 24,
+      paddingVertical: 16,
+      borderRadius: 28,
+      borderWidth: 1,
+      borderColor: theme.border,
+      shadowColor: theme.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    notesButtonIcon: {
+      fontSize: 20,
+      marginRight: 10,
+    },
+    notesButtonText: {
+      color: theme.text,
+      fontSize: 18,
+      fontWeight: '600',
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      justifyContent: 'flex-end',
+    },
+    modalCard: {
+      backgroundColor: theme.surface,
+      padding: 32,
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
+      minHeight: '50%',
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+      shadowColor: theme.primary,
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    modalTitle: {
+      color: theme.text,
+      fontSize: 28,
+      fontWeight: '700',
+      marginBottom: 24,
+      textAlign: 'center',
+    },
+    input: {
+      color: theme.text,
+      backgroundColor: theme.background,
+      borderColor: theme.border,
+      borderWidth: 1,
+      borderRadius: 20,
+      padding: 24,
+      minHeight: 240,
+      textAlignVertical: 'top',
+      fontSize: 18,
+      lineHeight: 26,
+    },
+    modalActions: {
+      flexDirection: 'row',
+      gap: 20,
+      marginTop: 32,
+      justifyContent: 'center',
+    },
+    actionBtn: {
+      paddingHorizontal: 32,
+      paddingVertical: 18,
+      borderRadius: 16,
+      minWidth: 140,
+      alignItems: 'center',
+    },
+    save: { 
+      backgroundColor: theme.primary,
+      shadowColor: theme.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    cancel: { 
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    actionText: { 
+      color: theme.textInverse, 
+      fontWeight: '600',
+      fontSize: 18,
+    },
+  });
+
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style={isDark ? "light" : "dark"} />
       
       {/* Header Section */}
       <View style={styles.header}>
@@ -410,247 +678,5 @@ export default function RecordingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0f1419',
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 40,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 40,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  settingsButton: {
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#1a1d2e',
-    borderWidth: 1,
-    borderColor: '#2a2f38',
-  },
-  settingsButtonText: {
-    fontSize: 20,
-    color: '#ffffff',
-  },
-  title: {
-    color: '#ffffff',
-    fontSize: 32,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: '#9BA1A6',
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  mainContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  timerContainer: {
-    alignItems: 'center',
-    marginBottom: 60,
-  },
-  timer: {
-    color: '#ffffff',
-    fontSize: 48,
-    fontWeight: '300',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: 2,
-  },
-  recordingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    backgroundColor: '#ff4444',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  recordingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ffffff',
-    marginRight: 8,
-  },
-  recordingText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
-  micContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-    position: 'relative',
-  },
-  micButtonWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  micButton: {
-    padding: 8,
-  },
-  micButtonPressed: {
-    opacity: 0.9,
-  },
-  micButtonInner: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0066ff',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  swipeHint: {
-    position: 'absolute',
-    top: -50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  swipeHintText: {
-    color: '#9BA1A6',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-    backgroundColor: 'rgba(15, 20, 25, 0.8)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#2a2f38',
-  },
-  swipeProgress: {
-    position: 'absolute',
-    top: -30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 5,
-  },
-  swipeProgressBar: {
-    width: 4,
-    height: 20,
-    backgroundColor: '#0066ff',
-    borderRadius: 2,
-    shadowColor: '#0066ff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  micIcon: {
-    color: '#fff',
-    fontSize: 72,
-    fontWeight: 'bold',
-  },
-  hint: {
-    color: '#9BA1A6',
-    fontSize: 16,
-    textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 280,
-  },
-  bottomNav: {
-    alignItems: 'center',
-    paddingTop: 20,
-  },
-  notesButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1a1d2e',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: '#2a2f38',
-  },
-  notesButtonIcon: {
-    fontSize: 18,
-    marginRight: 8,
-  },
-  notesButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    backgroundColor: '#1a1d2e',
-    padding: 24,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    minHeight: '50%',
-    borderTopWidth: 1,
-    borderTopColor: '#2a2f38',
-  },
-  modalTitle: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  input: {
-    color: '#ffffff',
-    backgroundColor: '#0f1419',
-    borderColor: '#2a2f38',
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 20,
-    minHeight: 200,
-    textAlignVertical: 'top',
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 16,
-    marginTop: 24,
-    justifyContent: 'center',
-  },
-  actionBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 12,
-    minWidth: 120,
-    alignItems: 'center',
-  },
-  save: { 
-    backgroundColor: '#0066ff',
-    shadowColor: '#0066ff',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  cancel: { 
-    backgroundColor: '#2a2f38',
-    borderWidth: 1,
-    borderColor: '#3a3f48',
-  },
-  actionText: { 
-    color: '#ffffff', 
-    fontWeight: '600',
-    fontSize: 16,
-  },
-});
 
 

@@ -5,6 +5,7 @@ export type DrawingStroke = {
   points: { x: number; y: number }[];
   color: string;
   strokeWidth: number;
+  toolType?: string; // Store which tool was used to create this stroke
 };
 
 export type MurmurNote = {
@@ -60,6 +61,7 @@ const PREFERENCES_KEY = 'murmur:preferences';
 export type UserPreferences = {
   selectedLanguage: string;
   hasCompletedOnboarding: boolean;
+  themeMode?: 'light' | 'dark' | 'system';
 };
 
 export async function getUserPreferences(): Promise<UserPreferences> {

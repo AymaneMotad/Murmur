@@ -46,31 +46,41 @@ export default function DrawingCanvas({
   }, [initialStrokes]);
 
   // Get tool-specific stroke characteristics
-  const getToolCharacteristics = (tool: string) => {
+  const getToolCharacteristics = (tool: string, pressure: number = 1.0) => {
+    const basePressure = Math.max(0.1, Math.min(1.0, pressure));
+    
     switch (tool) {
       case 'pencil':
         return {
-          opacity: 0.8 + Math.random() * 0.2, // 0.8-1.0 - slightly transparent
-          widthVariation: 0.7 + Math.random() * 0.6, // 0.7-1.3 - more variation
-          smoothness: 0.3, // Less smooth, more jagged
+          opacity: 0.6 + (basePressure * 0.4), // 0.6-1.0 - pressure sensitive
+          widthVariation: 0.5 + (basePressure * 0.8), // 0.5-1.3 - pressure affects width
+          smoothness: 0.2, // Less smooth, more jagged like real pencil
+          strokeCap: 'round' as const,
+          strokeJoin: 'round' as const,
         };
       case 'marker':
         return {
-          opacity: 0.95 + Math.random() * 0.05, // 0.95-1.0 - very opaque
-          widthVariation: 0.9 + Math.random() * 0.2, // 0.9-1.1 - less variation
-          smoothness: 0.8, // Very smooth
+          opacity: 0.9 + (basePressure * 0.1), // 0.9-1.0 - very opaque
+          widthVariation: 0.8 + (basePressure * 0.4), // 0.8-1.2 - less variation, more consistent
+          smoothness: 0.9, // Very smooth like marker
+          strokeCap: 'round' as const,
+          strokeJoin: 'round' as const,
         };
       case 'brush':
         return {
-          opacity: 0.6 + Math.random() * 0.4, // 0.6-1.0 - more transparent
-          widthVariation: 0.5 + Math.random() * 1.0, // 0.5-1.5 - high variation
-          smoothness: 0.9, // Very smooth
+          opacity: 0.4 + (basePressure * 0.6), // 0.4-1.0 - highly pressure sensitive
+          widthVariation: 0.3 + (basePressure * 1.2), // 0.3-1.5 - high variation based on pressure
+          smoothness: 0.95, // Very smooth like brush
+          strokeCap: 'round' as const,
+          strokeJoin: 'round' as const,
         };
       default:
         return {
-          opacity: 0.9 + Math.random() * 0.1,
-          widthVariation: 0.9 + Math.random() * 0.2,
-          smoothness: 0.5,
+          opacity: 0.8 + (basePressure * 0.2),
+          widthVariation: 0.8 + (basePressure * 0.4),
+          smoothness: 0.7,
+          strokeCap: 'round' as const,
+          strokeJoin: 'round' as const,
         };
     }
   };
@@ -115,7 +125,7 @@ export default function DrawingCanvas({
       if (isDrawing && currentStroke.length > 0) {
         if (isErasing) {
           // Eraser mode - remove parts of strokes that intersect with eraser path
-          const eraserRadius = strokeWidth * 1.5; // Slightly larger for better erasing
+          const eraserRadius = strokeWidth / 2; // Use actual eraser radius
           const updatedStrokes = strokes.map(stroke => {
             // Create a more precise erasing by checking each point against the eraser path
             const filteredPoints = stroke.points.filter(strokePoint => {
@@ -145,6 +155,7 @@ export default function DrawingCanvas({
             points: [...currentStroke],
             color: strokeColor,
             strokeWidth: strokeWidth,
+            toolType: toolType, // Store the tool type used to create this stroke
           };
           
           const updatedStrokes = [...strokes, newStroke];
@@ -169,7 +180,8 @@ export default function DrawingCanvas({
     // Handle single point strokes (dots)
     if (stroke.points.length === 1) {
       const point = stroke.points[0];
-      const toolChars = getToolCharacteristics(toolType);
+      const strokeToolType = stroke.toolType || toolType; // Use stroke's tool type or fallback to current
+      const toolChars = getToolCharacteristics(strokeToolType, 1.0);
       const naturalSize = stroke.strokeWidth * toolChars.widthVariation;
       return (
         <View
@@ -190,9 +202,8 @@ export default function DrawingCanvas({
       );
     }
     
-    // Create tool-specific stroke rendering
+    // Create tool-specific stroke rendering with pressure simulation
     const lines = [];
-    const toolChars = getToolCharacteristics(toolType);
     
     for (let i = 0; i < stroke.points.length - 1; i++) {
       const start = stroke.points[i];
@@ -202,16 +213,32 @@ export default function DrawingCanvas({
         Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
       );
       
+      // Simulate pressure based on drawing speed and tool type
+      const speed = distance > 0 ? 1 / (distance + 1) : 1; // Faster = less pressure
+      const pressure = Math.max(0.1, Math.min(1.0, speed));
+      const strokeToolType = stroke.toolType || toolType; // Use stroke's tool type or fallback to current
+      const toolChars = getToolCharacteristics(strokeToolType, pressure);
+      
       // Use tool-specific smoothness threshold
-      const threshold = toolChars.smoothness > 0.7 ? 0.3 : 0.8;
+      const threshold = toolChars.smoothness > 0.7 ? 0.2 : 1.0;
       
       if (distance > threshold) {
         const angle = Math.atan2(end.y - start.y, end.x - start.x);
         const midX = (start.x + end.x) / 2;
         const midY = (start.y + end.y) / 2;
         
-        // Apply tool-specific characteristics
+        // Apply tool-specific characteristics with pressure
         const naturalWidth = stroke.strokeWidth * toolChars.widthVariation;
+        
+        // Add texture variation for different tools
+        let borderRadius = naturalWidth / 2;
+        if (strokeToolType === 'pencil') {
+          borderRadius = naturalWidth * 0.3; // More angular
+        } else if (strokeToolType === 'marker') {
+          borderRadius = naturalWidth * 0.8; // Very round
+        } else if (strokeToolType === 'brush') {
+          borderRadius = naturalWidth * 0.6; // Medium round
+        }
         
         lines.push(
           <View
@@ -225,6 +252,7 @@ export default function DrawingCanvas({
                 height: naturalWidth,
                 backgroundColor: stroke.color,
                 opacity: toolChars.opacity,
+                borderRadius: borderRadius,
                 transform: [{ rotate: `${angle}rad` }],
               },
             ]}
@@ -242,7 +270,7 @@ export default function DrawingCanvas({
     // Handle single point current stroke (dots)
     if (currentStroke.length === 1) {
       const point = currentStroke[0];
-      const toolChars = getToolCharacteristics(toolType);
+      const toolChars = getToolCharacteristics(toolType, 1.0);
       const naturalSize = strokeWidth * toolChars.widthVariation;
       return (
         <View
@@ -264,7 +292,6 @@ export default function DrawingCanvas({
     }
     
     const lines = [];
-    const toolChars = getToolCharacteristics(toolType);
     
     for (let i = 0; i < currentStroke.length - 1; i++) {
       const start = currentStroke[i];
@@ -274,16 +301,31 @@ export default function DrawingCanvas({
         Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
       );
       
+      // Simulate pressure based on drawing speed and tool type
+      const speed = distance > 0 ? 1 / (distance + 1) : 1; // Faster = less pressure
+      const pressure = Math.max(0.1, Math.min(1.0, speed));
+      const toolChars = getToolCharacteristics(toolType, pressure);
+      
       // Use tool-specific smoothness threshold
-      const threshold = toolChars.smoothness > 0.7 ? 0.3 : 0.8;
+      const threshold = toolChars.smoothness > 0.7 ? 0.2 : 1.0;
       
       if (distance > threshold) {
         const angle = Math.atan2(end.y - start.y, end.x - start.x);
         const midX = (start.x + end.x) / 2;
         const midY = (start.y + end.y) / 2;
         
-        // Apply tool-specific characteristics
+        // Apply tool-specific characteristics with pressure
         const naturalWidth = strokeWidth * toolChars.widthVariation;
+        
+        // Add texture variation for different tools
+        let borderRadius = naturalWidth / 2;
+        if (strokeToolType === 'pencil') {
+          borderRadius = naturalWidth * 0.3; // More angular
+        } else if (strokeToolType === 'marker') {
+          borderRadius = naturalWidth * 0.8; // Very round
+        } else if (strokeToolType === 'brush') {
+          borderRadius = naturalWidth * 0.6; // Medium round
+        }
         
         lines.push(
           <View
@@ -297,6 +339,7 @@ export default function DrawingCanvas({
                 height: naturalWidth,
                 backgroundColor: strokeColor,
                 opacity: toolChars.opacity,
+                borderRadius: borderRadius,
                 transform: [{ rotate: `${angle}rad` }],
               },
             ]}

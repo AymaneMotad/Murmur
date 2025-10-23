@@ -84,7 +84,12 @@ export default function DrawingModal({
   const [selectedStrokeWidth, setSelectedStrokeWidth] = useState(3);
   const [isDarkBackground, setIsDarkBackground] = useState(true);
   const [selectedTool, setSelectedTool] = useState('pencil'); // 'pencil', 'marker', 'brush', 'eraser'
-  const [eraserSize, setEraserSize] = useState(0.5);
+  const [eraserSize, setEraserSize] = useState(0.2); // Start smaller, max 0.4
+  
+  // Tool-specific stroke widths
+  const [pencilWidth, setPencilWidth] = useState(2);
+  const [markerWidth, setMarkerWidth] = useState(4);
+  const [brushWidth, setBrushWidth] = useState(6);
 
   const handleDrawingChange = useCallback((newStrokes: DrawingStroke[]) => {
     setCurrentStrokes(newStrokes);
@@ -98,6 +103,22 @@ export default function DrawingModal({
   const handleToolSelect = useCallback((tool: string) => {
     setSelectedTool(tool);
   }, []);
+
+  // Get current stroke width based on selected tool
+  const getCurrentStrokeWidth = () => {
+    switch (selectedTool) {
+      case 'pencil':
+        return pencilWidth;
+      case 'marker':
+        return markerWidth;
+      case 'brush':
+        return brushWidth;
+      case 'eraser':
+        return eraserSize * 10; // Convert to pixel size
+      default:
+        return selectedStrokeWidth;
+    }
+  };
 
   const handleUndo = useCallback(() => {
     if (currentStrokes.length > 0) {
@@ -148,7 +169,7 @@ export default function DrawingModal({
             onDrawingChange={handleDrawingChange}
             initialStrokes={currentStrokes}
             strokeColor={selectedTool === 'eraser' ? 'transparent' : selectedColor}
-            strokeWidth={selectedTool === 'eraser' ? eraserSize * 10 : selectedStrokeWidth}
+            strokeWidth={getCurrentStrokeWidth()}
             isErasing={selectedTool === 'eraser'}
             toolType={selectedTool}
           />
@@ -194,7 +215,7 @@ export default function DrawingModal({
                 value={eraserSize}
                 onValueChange={setEraserSize}
                 min={0.1}
-                max={2.0}
+                max={0.4} // Progressive limit to 0.4
                 width={150}
               />
             </View>
@@ -224,25 +245,82 @@ export default function DrawingModal({
               </View>
               
               <View style={styles.sizeOptions}>
-                <Text style={styles.optionLabel}>Size:</Text>
-                <Pressable 
-                  style={[styles.sizeButton, selectedStrokeWidth === 2 && styles.selectedSize]} 
-                  onPress={() => setSelectedStrokeWidth(2)}
-                >
-                  <Text style={styles.sizeText}>2</Text>
-                </Pressable>
-                <Pressable 
-                  style={[styles.sizeButton, selectedStrokeWidth === 3 && styles.selectedSize]} 
-                  onPress={() => setSelectedStrokeWidth(3)}
-                >
-                  <Text style={styles.sizeText}>3</Text>
-                </Pressable>
-                <Pressable 
-                  style={[styles.sizeButton, selectedStrokeWidth === 5 && styles.selectedSize]} 
-                  onPress={() => setSelectedStrokeWidth(5)}
-                >
-                  <Text style={styles.sizeText}>5</Text>
-                </Pressable>
+                {selectedTool === 'pencil' ? (
+                  <View style={styles.pencilOptions}>
+                    <Text style={styles.optionLabel}>Pencil Size:</Text>
+                    <SizeSelector
+                      value={pencilWidth}
+                      onValueChange={setPencilWidth}
+                      min={1}
+                      max={5}
+                      width={150}
+                    />
+                  </View>
+                ) : selectedTool === 'marker' ? (
+                  <>
+                    <Text style={styles.optionLabel}>Marker Size:</Text>
+                    <Pressable 
+                      style={[styles.sizeButton, markerWidth === 3 && styles.selectedSize]} 
+                      onPress={() => setMarkerWidth(3)}
+                    >
+                      <Text style={styles.sizeText}>3</Text>
+                    </Pressable>
+                    <Pressable 
+                      style={[styles.sizeButton, markerWidth === 4 && styles.selectedSize]} 
+                      onPress={() => setMarkerWidth(4)}
+                    >
+                      <Text style={styles.sizeText}>4</Text>
+                    </Pressable>
+                    <Pressable 
+                      style={[styles.sizeButton, markerWidth === 6 && styles.selectedSize]} 
+                      onPress={() => setMarkerWidth(6)}
+                    >
+                      <Text style={styles.sizeText}>6</Text>
+                    </Pressable>
+                  </>
+                ) : selectedTool === 'brush' ? (
+                  <>
+                    <Pressable 
+                      style={[styles.sizeButton, brushWidth === 4 && styles.selectedSize]} 
+                      onPress={() => setBrushWidth(4)}
+                    >
+                      <Text style={styles.sizeText}>4</Text>
+                    </Pressable>
+                    <Pressable 
+                      style={[styles.sizeButton, brushWidth === 6 && styles.selectedSize]} 
+                      onPress={() => setBrushWidth(6)}
+                    >
+                      <Text style={styles.sizeText}>6</Text>
+                    </Pressable>
+                    <Pressable 
+                      style={[styles.sizeButton, brushWidth === 8 && styles.selectedSize]} 
+                      onPress={() => setBrushWidth(8)}
+                    >
+                      <Text style={styles.sizeText}>8</Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <>
+                    <Pressable 
+                      style={[styles.sizeButton, selectedStrokeWidth === 2 && styles.selectedSize]} 
+                      onPress={() => setSelectedStrokeWidth(2)}
+                    >
+                      <Text style={styles.sizeText}>2</Text>
+                    </Pressable>
+                    <Pressable 
+                      style={[styles.sizeButton, selectedStrokeWidth === 3 && styles.selectedSize]} 
+                      onPress={() => setSelectedStrokeWidth(3)}
+                    >
+                      <Text style={styles.sizeText}>3</Text>
+                    </Pressable>
+                    <Pressable 
+                      style={[styles.sizeButton, selectedStrokeWidth === 5 && styles.selectedSize]} 
+                      onPress={() => setSelectedStrokeWidth(5)}
+                    >
+                      <Text style={styles.sizeText}>5</Text>
+                    </Pressable>
+                  </>
+                )}
               </View>
             </View>
           )}
@@ -329,6 +407,12 @@ const styles = StyleSheet.create({
     borderTopColor: '#2a2f38',
   },
   eraserOptions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  pencilOptions: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

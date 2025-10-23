@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView, Animated } from 'react-n
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { getUserPreferences, saveUserPreferences, UserPreferences } from '@/lib/storage';
+import { useTheme } from '@/hooks/use-theme';
 
 // Supported languages with their display names and flags
 const SUPPORTED_LANGUAGES = [
@@ -33,6 +34,7 @@ const SUPPORTED_LANGUAGES = [
 ];
 
 export default function SettingsScreen() {
+  const { theme, isDark, themeMode, setThemeMode } = useTheme();
   const [selectedLanguage, setSelectedLanguage] = useState<string>('en-US');
   const [fadeAnim] = useState(new Animated.Value(0));
 
@@ -69,12 +71,193 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleResetOnboarding = async () => {
+    try {
+      const preferences = await getUserPreferences();
+      const updatedPreferences: UserPreferences = {
+        ...preferences,
+        hasCompletedOnboarding: false,
+      };
+      await saveUserPreferences(updatedPreferences);
+      // Navigate to splash screen to restart the flow
+      router.replace('/splash');
+    } catch (error) {
+      console.error('Error resetting onboarding:', error);
+    }
+  };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 24,
+      paddingTop: 60,
+      paddingBottom: 40,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 32,
+    },
+    backButton: {
+      padding: 8,
+    },
+    backButtonText: {
+      color: theme.primary,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: theme.text,
+      textAlign: 'center',
+    },
+    placeholder: {
+      width: 60,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: theme.textSecondary,
+      textAlign: 'center',
+      lineHeight: 24,
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.text,
+      marginBottom: 16,
+      marginTop: 24,
+    },
+    settingItem: {
+      backgroundColor: theme.surface,
+      borderRadius: 12,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    settingItemContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 16,
+    },
+    settingIcon: {
+      fontSize: 20,
+      marginRight: 16,
+    },
+    settingTextContainer: {
+      flex: 1,
+    },
+    settingTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.text,
+      marginBottom: 2,
+    },
+    settingSubtitle: {
+      fontSize: 14,
+      color: theme.textSecondary,
+    },
+    settingValue: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      marginRight: 8,
+    },
+    themeSelector: {
+      flexDirection: 'row',
+      backgroundColor: theme.surface,
+      borderRadius: 12,
+      padding: 4,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    themeOption: {
+      flex: 1,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    themeOptionSelected: {
+      backgroundColor: theme.primary,
+    },
+    themeOptionText: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: theme.textSecondary,
+    },
+    themeOptionTextSelected: {
+      color: theme.textInverse,
+    },
+    languageList: {
+      flex: 1,
+    },
+    languageListContent: {
+      paddingBottom: 20,
+    },
+    languageItem: {
+      backgroundColor: theme.surface,
+      borderRadius: 12,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    languageItemSelected: {
+      backgroundColor: theme.primary,
+      borderColor: theme.primary,
+    },
+    languageItemContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 16,
+    },
+    languageFlag: {
+      fontSize: 24,
+      marginRight: 16,
+    },
+    languageTextContainer: {
+      flex: 1,
+    },
+    languageName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.text,
+      marginBottom: 2,
+    },
+    languageNameSelected: {
+      color: theme.textInverse,
+    },
+    languageNativeName: {
+      fontSize: 14,
+      color: theme.textSecondary,
+    },
+    languageNativeNameSelected: {
+      color: theme.textInverse,
+      opacity: 0.8,
+    },
+    selectedIndicator: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: theme.textInverse,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkmark: {
+      color: theme.primary,
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+  });
+
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-      
-      {/* Background gradient effect */}
-      <View style={styles.backgroundGradient} />
+      <StatusBar style={isDark ? "light" : "dark"} />
       
       <Animated.View 
         style={[
@@ -90,15 +273,87 @@ export default function SettingsScreen() {
           >
             <Text style={styles.backButtonText}>← Back</Text>
           </Pressable>
-          <Text style={styles.title}>Language Settings</Text>
+          <Text style={styles.title}>Settings</Text>
           <View style={styles.placeholder} />
         </View>
 
+        {/* Theme Selection */}
+        <Text style={styles.sectionTitle}>Appearance</Text>
+        <View style={styles.settingItem}>
+          <View style={styles.settingItemContent}>
+            <Text style={styles.settingIcon}>🎨</Text>
+            <View style={styles.settingTextContainer}>
+              <Text style={styles.settingTitle}>Theme</Text>
+              <Text style={styles.settingSubtitle}>Choose your preferred theme</Text>
+            </View>
+          </View>
+          <View style={styles.themeSelector}>
+            <Pressable
+              style={[
+                styles.themeOption,
+                themeMode === 'light' && styles.themeOptionSelected,
+              ]}
+              onPress={() => setThemeMode('light')}
+            >
+              <Text style={[
+                styles.themeOptionText,
+                themeMode === 'light' && styles.themeOptionTextSelected,
+              ]}>
+                Light
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.themeOption,
+                themeMode === 'dark' && styles.themeOptionSelected,
+              ]}
+              onPress={() => setThemeMode('dark')}
+            >
+              <Text style={[
+                styles.themeOptionText,
+                themeMode === 'dark' && styles.themeOptionTextSelected,
+              ]}>
+                Dark
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.themeOption,
+                themeMode === 'system' && styles.themeOptionSelected,
+              ]}
+              onPress={() => setThemeMode('system')}
+            >
+              <Text style={[
+                styles.themeOptionText,
+                themeMode === 'system' && styles.themeOptionTextSelected,
+              ]}>
+                System
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Development/Testing Options */}
+        <Text style={styles.sectionTitle}>Development</Text>
+        <View style={styles.settingItem}>
+          <Pressable 
+            style={styles.settingItemContent}
+            onPress={handleResetOnboarding}
+          >
+            <Text style={styles.settingIcon}>🔄</Text>
+            <View style={styles.settingTextContainer}>
+              <Text style={styles.settingTitle}>Reset Onboarding</Text>
+              <Text style={styles.settingSubtitle}>Show onboarding flow again</Text>
+            </View>
+          </Pressable>
+        </View>
+
+        {/* Language Selection */}
+        <Text style={styles.sectionTitle}>Language</Text>
         <Text style={styles.subtitle}>
           Choose your preferred language for voice recognition
         </Text>
 
-        {/* Language selection */}
         <ScrollView 
           style={styles.languageList}
           showsVerticalScrollIndicator={false}
@@ -143,112 +398,3 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0f1419',
-  },
-  backgroundGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#0f1419',
-    opacity: 0.9,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 40,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 32,
-  },
-  backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    color: '#0066ff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#ECEDEE',
-    textAlign: 'center',
-  },
-  placeholder: {
-    width: 60, // Same width as back button for centering
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#9BA1A6',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 24,
-  },
-  languageList: {
-    flex: 1,
-  },
-  languageListContent: {
-    paddingBottom: 20,
-  },
-  languageItem: {
-    backgroundColor: '#1a1d2e',
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  languageItemSelected: {
-    backgroundColor: '#0066ff',
-    borderColor: '#0066ff',
-  },
-  languageItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  languageFlag: {
-    fontSize: 24,
-    marginRight: 16,
-  },
-  languageTextContainer: {
-    flex: 1,
-  },
-  languageName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ECEDEE',
-    marginBottom: 2,
-  },
-  languageNameSelected: {
-    color: '#FFFFFF',
-  },
-  languageNativeName: {
-    fontSize: 14,
-    color: '#9BA1A6',
-  },
-  languageNativeNameSelected: {
-    color: '#E6F4FE',
-  },
-  selectedIndicator: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkmark: {
-    color: '#0066ff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
