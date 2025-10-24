@@ -7,10 +7,12 @@ import {
   StyleSheet,
   Dimensions,
   StatusBar,
-  PanResponder,
 } from 'react-native';
+import { Svg, Path } from 'react-native-svg';
 import DrawingCanvas from './DrawingCanvas';
 import { DrawingStroke } from '@/lib/storage';
+import { useTheme } from '@/hooks/use-theme';
+import { lightTheme, darkTheme } from '@/constants/neumorphic-theme';
 
 interface DrawingModalProps {
   visible: boolean;
@@ -22,52 +24,103 @@ interface DrawingModalProps {
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CANVAS_HEIGHT = Math.min(screenHeight * 0.75, 600); // Limit max height to prevent crashes
 
-// Draggable Size Selector Component
+// Simplified icons for better Android compatibility
+const PencilIcon = ({ color = '#000', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path
+      d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+      fill={color}
+    />
+  </Svg>
+);
+
+const MarkerIcon = ({ color = '#000', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path
+      d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+      fill={color}
+      opacity="0.7"
+    />
+  </Svg>
+);
+
+const BrushIcon = ({ color = '#000', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path
+      d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34c-.39-.39-1.02-.39-1.41 0L9 12.25 11.75 15l8.96-8.96c.39-.39.39-1.02 0-1.41z"
+      fill={color}
+    />
+  </Svg>
+);
+
+const EraserIcon = ({ color = '#000', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path
+      d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 0 1-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0M4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-6.36-6.36-3.54 3.36z"
+      fill={color}
+    />
+  </Svg>
+);
+
+const UndoIcon = ({ color = '#000', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path
+      d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"
+      fill={color}
+    />
+  </Svg>
+);
+
+const ClearIcon = ({ color = '#000', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path
+      d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+      fill={color}
+    />
+  </Svg>
+);
+
+// Simple Size Selector Component
 const SizeSelector = ({ 
   value, 
   onValueChange, 
-  min = 0.1, 
-  max = 2.0, 
-  width = 200 
+  min = 1, 
+  max = 10, 
+  theme
 }: {
   value: number;
   onValueChange: (value: number) => void;
   min?: number;
   max?: number;
-  width?: number;
+  theme?: any;
 }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  
-  const percentage = ((value - min) / (max - min)) * 100;
-  const thumbPosition = (percentage / 100) * width;
-  
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: () => setIsDragging(true),
-    onPanResponderMove: (_, gestureState) => {
-      if (isDragging) {
-        const newPercentage = Math.max(0, Math.min(100, (gestureState.moveX / width) * 100));
-        const newValue = min + (newPercentage / 100) * (max - min);
-        onValueChange(newValue);
-      }
-    },
-    onPanResponderRelease: () => setIsDragging(false),
-  });
+  const sizes = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   
   return (
     <View style={styles.sizeSelectorContainer}>
-      <View style={[styles.sizeSelectorTrack, { width }]}>
-        <View style={styles.sizeSelectorFill} />
-        <View
+      {sizes.map((size) => (
+        <Pressable
+          key={size}
           style={[
-            styles.sizeSelectorThumb,
-            { left: thumbPosition - 8 }
+            styles.sizeButton,
+            { backgroundColor: theme?.buttonBackground || '#2a2f38' },
+            value === size && styles.selectedSize
           ]}
-          {...panResponder.panHandlers}
-        />
-      </View>
-      <Text style={styles.sizeSelectorValue}>{value.toFixed(1)}</Text>
+          onPress={() => onValueChange(size)}
+        >
+          <View
+            style={[
+              styles.sizeIndicator,
+              {
+                width: size * 2,
+                height: size * 2,
+                backgroundColor: theme?.primaryText || '#ffffff',
+                borderRadius: size,
+              }
+            ]}
+          />
+        </Pressable>
+      ))}
     </View>
   );
 };
@@ -78,23 +131,20 @@ export default function DrawingModal({
   onSave,
   initialDrawing = [],
 }: DrawingModalProps) {
+  const { isDark } = useTheme();
   const [currentStrokes, setCurrentStrokes] = useState<DrawingStroke[]>(initialDrawing || []);
   
-  const [selectedColor, setSelectedColor] = useState('#ffffff');
-  const [selectedStrokeWidth, setSelectedStrokeWidth] = useState(3);
-  const [isDarkBackground, setIsDarkBackground] = useState(true);
-  const [selectedTool, setSelectedTool] = useState('pencil'); // 'pencil', 'marker', 'brush', 'eraser'
-  const [eraserSize, setEraserSize] = useState(0.2); // Start smaller, max 0.4
+  // Get current theme
+  const currentTheme = isDark ? darkTheme : lightTheme;
   
-  // Tool-specific stroke widths
-  const [pencilWidth, setPencilWidth] = useState(2);
-  const [markerWidth, setMarkerWidth] = useState(4);
-  const [brushWidth, setBrushWidth] = useState(6);
+  const [selectedColor, setSelectedColor] = useState(isDark ? '#ffffff' : '#000000');
+  const [selectedTool, setSelectedTool] = useState('pencil'); // 'pencil', 'marker', 'brush', 'eraser'
+  const [selectedStrokeWidth, setSelectedStrokeWidth] = useState(3);
 
   const handleDrawingChange = useCallback((newStrokes: DrawingStroke[]) => {
     try {
       // Limit the number of strokes to prevent memory issues
-      const limitedStrokes = newStrokes.slice(-50); // Keep only last 50 strokes
+      const limitedStrokes = newStrokes.slice(-30); // Keep only last 30 strokes
       setCurrentStrokes(limitedStrokes);
     } catch (error) {
       console.error('Error handling drawing change:', error);
@@ -108,23 +158,22 @@ export default function DrawingModal({
 
   const handleToolSelect = useCallback((tool: string) => {
     setSelectedTool(tool);
-  }, []);
-
-  // Get current stroke width based on selected tool
-  const getCurrentStrokeWidth = () => {
-    switch (selectedTool) {
+    // Set appropriate stroke width for each tool
+    switch (tool) {
       case 'pencil':
-        return pencilWidth;
+        setSelectedStrokeWidth(2);
+        break;
       case 'marker':
-        return markerWidth;
+        setSelectedStrokeWidth(4);
+        break;
       case 'brush':
-        return brushWidth;
+        setSelectedStrokeWidth(6);
+        break;
       case 'eraser':
-        return eraserSize * 10; // Convert to pixel size
-      default:
-        return selectedStrokeWidth;
+        setSelectedStrokeWidth(8);
+        break;
     }
-  };
+  }, []);
 
   const handleUndo = useCallback(() => {
     if (currentStrokes.length > 0) {
@@ -152,196 +201,151 @@ export default function DrawingModal({
       onRequestClose={handleClose}
       statusBarTranslucent={false}
     >
-      <StatusBar barStyle="light-content" />
-      <View style={styles.container}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+      <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
         {/* Header */}
-        <View style={styles.header}>
-          <Pressable style={styles.headerButton} onPress={handleClose}>
-            <Text style={styles.headerButtonText}>Cancel</Text>
+        <View style={[styles.header, { backgroundColor: currentTheme.background, borderBottomColor: currentTheme.shadowColor }]}>
+          <Pressable style={[styles.headerButton, { backgroundColor: currentTheme.buttonBackground }]} onPress={handleClose}>
+            <Text style={[styles.headerButtonText, { color: currentTheme.primaryText }]}>Cancel</Text>
           </Pressable>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Draw</Text>
+            <Text style={[styles.headerTitle, { color: currentTheme.primaryText }]}>Draw</Text>
           </View>
-          <Pressable style={styles.headerButton} onPress={handleSave}>
-            <Text style={[styles.headerButtonText, styles.saveText]}>Done</Text>
+          <Pressable style={[styles.headerButton, { backgroundColor: currentTheme.accentColor }]} onPress={handleSave}>
+            <Text style={[styles.headerButtonText, { color: currentTheme.primaryText }]}>Done</Text>
           </Pressable>
         </View>
 
         {/* Drawing Canvas */}
-        <View style={[styles.canvasContainer, { backgroundColor: isDarkBackground ? '#0f1419' : '#ffffff' }]}>
+        <View style={[styles.canvasContainer, { backgroundColor: currentTheme.cardBackground }]}>
           <DrawingCanvas
             width={Math.min(screenWidth, 400)} // Limit width to prevent crashes
             height={CANVAS_HEIGHT}
             onDrawingChange={handleDrawingChange}
             initialStrokes={currentStrokes}
             strokeColor={selectedTool === 'eraser' ? 'transparent' : selectedColor}
-            strokeWidth={getCurrentStrokeWidth()}
+            strokeWidth={selectedStrokeWidth}
             isErasing={selectedTool === 'eraser'}
             toolType={selectedTool}
           />
         </View>
 
         {/* Tool Selection */}
-        <View style={styles.toolSelection}>
+        <View style={[styles.toolSelection, { backgroundColor: currentTheme.background, borderTopColor: currentTheme.shadowColor }]}>
           <Pressable 
-            style={[styles.toolButton, selectedTool === 'pencil' && styles.activeTool]} 
+            style={[
+              styles.toolButton,
+              { backgroundColor: selectedTool === 'pencil' ? currentTheme.accentColor : currentTheme.buttonBackground },
+              selectedTool === 'pencil' && styles.activeTool
+            ]} 
             onPress={() => handleToolSelect('pencil')}
           >
-            <Text style={styles.toolIcon}>✏️</Text>
+            <PencilIcon color={currentTheme.primaryText} size={20} />
           </Pressable>
           
           <Pressable 
-            style={[styles.toolButton, selectedTool === 'marker' && styles.activeTool]} 
+            style={[
+              styles.toolButton,
+              { backgroundColor: selectedTool === 'marker' ? currentTheme.accentColor : currentTheme.buttonBackground },
+              selectedTool === 'marker' && styles.activeTool
+            ]} 
             onPress={() => handleToolSelect('marker')}
           >
-            <Text style={styles.toolIcon}>🖍️</Text>
+            <MarkerIcon color={currentTheme.primaryText} size={20} />
           </Pressable>
           
           <Pressable 
-            style={[styles.toolButton, selectedTool === 'brush' && styles.activeTool]} 
+            style={[
+              styles.toolButton,
+              { backgroundColor: selectedTool === 'brush' ? currentTheme.accentColor : currentTheme.buttonBackground },
+              selectedTool === 'brush' && styles.activeTool
+            ]} 
             onPress={() => handleToolSelect('brush')}
           >
-            <Text style={styles.toolIcon}>🖌️</Text>
+            <BrushIcon color={currentTheme.primaryText} size={20} />
           </Pressable>
           
           <Pressable 
-            style={[styles.toolButton, selectedTool === 'eraser' && styles.activeTool]} 
+            style={[
+              styles.toolButton,
+              { backgroundColor: selectedTool === 'eraser' ? currentTheme.accentColor : currentTheme.buttonBackground },
+              selectedTool === 'eraser' && styles.activeTool
+            ]} 
             onPress={() => handleToolSelect('eraser')}
           >
-            <Text style={styles.toolIcon}>🧽</Text>
+            <EraserIcon color={currentTheme.primaryText} size={20} />
           </Pressable>
         </View>
 
         {/* Tool Options */}
-        <View style={styles.toolOptions}>
-          {selectedTool === 'eraser' ? (
-            <View style={styles.eraserOptions}>
-              <Text style={styles.optionLabel}>Eraser Size:</Text>
-              <SizeSelector
-                value={eraserSize}
-                onValueChange={setEraserSize}
-                min={0.1}
-                max={0.4} // Progressive limit to 0.4
-                width={150}
+        <View style={[styles.toolOptions, { backgroundColor: currentTheme.background, borderTopColor: currentTheme.shadowColor }]}>
+          <View style={styles.drawingOptions}>
+            <View style={styles.colorPicker}>
+              <Pressable 
+                style={[
+                  styles.colorButton,
+                  { backgroundColor: '#ffffff' },
+                  selectedColor === '#ffffff' && styles.selectedColor
+                ]} 
+                onPress={() => setSelectedColor('#ffffff')}
+              />
+              <Pressable 
+                style={[
+                  styles.colorButton,
+                  { backgroundColor: '#000000' },
+                  selectedColor === '#000000' && styles.selectedColor
+                ]} 
+                onPress={() => setSelectedColor('#000000')}
+              />
+              <Pressable 
+                style={[
+                  styles.colorButton,
+                  { backgroundColor: currentTheme.accentColor },
+                  selectedColor === currentTheme.accentColor && styles.selectedColor
+                ]} 
+                onPress={() => setSelectedColor(currentTheme.accentColor)}
+              />
+              <Pressable 
+                style={[
+                  styles.colorButton,
+                  { backgroundColor: '#ff3b30' },
+                  selectedColor === '#ff3b30' && styles.selectedColor
+                ]} 
+                onPress={() => setSelectedColor('#ff3b30')}
+              />
+              <Pressable 
+                style={[
+                  styles.colorButton,
+                  { backgroundColor: '#34c759' },
+                  selectedColor === '#34c759' && styles.selectedColor
+                ]} 
+                onPress={() => setSelectedColor('#34c759')}
               />
             </View>
-          ) : (
-            <View style={styles.drawingOptions}>
-              <View style={styles.colorPicker}>
-                <Pressable 
-                  style={[styles.colorButton, { backgroundColor: '#ffffff' }, selectedColor === '#ffffff' && styles.selectedColor]} 
-                  onPress={() => setSelectedColor('#ffffff')}
-                />
-                <Pressable 
-                  style={[styles.colorButton, { backgroundColor: '#000000' }, selectedColor === '#000000' && styles.selectedColor]} 
-                  onPress={() => setSelectedColor('#000000')}
-                />
-                <Pressable 
-                  style={[styles.colorButton, { backgroundColor: '#0066ff' }, selectedColor === '#0066ff' && styles.selectedColor]} 
-                  onPress={() => setSelectedColor('#0066ff')}
-                />
-                <Pressable 
-                  style={[styles.colorButton, { backgroundColor: '#ff3b30' }, selectedColor === '#ff3b30' && styles.selectedColor]} 
-                  onPress={() => setSelectedColor('#ff3b30')}
-                />
-                <Pressable 
-                  style={[styles.colorButton, { backgroundColor: '#34c759' }, selectedColor === '#34c759' && styles.selectedColor]} 
-                  onPress={() => setSelectedColor('#34c759')}
-                />
-              </View>
-              
-              <View style={styles.sizeOptions}>
-                {selectedTool === 'pencil' ? (
-                  <View style={styles.pencilOptions}>
-                    <Text style={styles.optionLabel}>Pencil Size:</Text>
-                    <SizeSelector
-                      value={pencilWidth}
-                      onValueChange={setPencilWidth}
-                      min={1}
-                      max={5}
-                      width={150}
-                    />
-                  </View>
-                ) : selectedTool === 'marker' ? (
-                  <>
-                    <Text style={styles.optionLabel}>Marker Size:</Text>
-                    <Pressable 
-                      style={[styles.sizeButton, markerWidth === 3 && styles.selectedSize]} 
-                      onPress={() => setMarkerWidth(3)}
-                    >
-                      <Text style={styles.sizeText}>3</Text>
-                    </Pressable>
-                    <Pressable 
-                      style={[styles.sizeButton, markerWidth === 4 && styles.selectedSize]} 
-                      onPress={() => setMarkerWidth(4)}
-                    >
-                      <Text style={styles.sizeText}>4</Text>
-                    </Pressable>
-                    <Pressable 
-                      style={[styles.sizeButton, markerWidth === 6 && styles.selectedSize]} 
-                      onPress={() => setMarkerWidth(6)}
-                    >
-                      <Text style={styles.sizeText}>6</Text>
-                    </Pressable>
-                  </>
-                ) : selectedTool === 'brush' ? (
-                  <>
-                    <Pressable 
-                      style={[styles.sizeButton, brushWidth === 4 && styles.selectedSize]} 
-                      onPress={() => setBrushWidth(4)}
-                    >
-                      <Text style={styles.sizeText}>4</Text>
-                    </Pressable>
-                    <Pressable 
-                      style={[styles.sizeButton, brushWidth === 6 && styles.selectedSize]} 
-                      onPress={() => setBrushWidth(6)}
-                    >
-                      <Text style={styles.sizeText}>6</Text>
-                    </Pressable>
-                    <Pressable 
-                      style={[styles.sizeButton, brushWidth === 8 && styles.selectedSize]} 
-                      onPress={() => setBrushWidth(8)}
-                    >
-                      <Text style={styles.sizeText}>8</Text>
-                    </Pressable>
-                  </>
-                ) : (
-                  <>
-                    <Pressable 
-                      style={[styles.sizeButton, selectedStrokeWidth === 2 && styles.selectedSize]} 
-                      onPress={() => setSelectedStrokeWidth(2)}
-                    >
-                      <Text style={styles.sizeText}>2</Text>
-                    </Pressable>
-                    <Pressable 
-                      style={[styles.sizeButton, selectedStrokeWidth === 3 && styles.selectedSize]} 
-                      onPress={() => setSelectedStrokeWidth(3)}
-                    >
-                      <Text style={styles.sizeText}>3</Text>
-                    </Pressable>
-                    <Pressable 
-                      style={[styles.sizeButton, selectedStrokeWidth === 5 && styles.selectedSize]} 
-                      onPress={() => setSelectedStrokeWidth(5)}
-                    >
-                      <Text style={styles.sizeText}>5</Text>
-                    </Pressable>
-                  </>
-                )}
-              </View>
+            
+            <View style={styles.sizeOptions}>
+              <Text style={[styles.optionLabel, { color: currentTheme.primaryText }]}>Size:</Text>
+              <SizeSelector
+                value={selectedStrokeWidth}
+                onValueChange={setSelectedStrokeWidth}
+                min={1}
+                max={10}
+                theme={currentTheme}
+              />
             </View>
-          )}
+          </View>
         </View>
 
         {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <Pressable style={styles.actionButton} onPress={handleUndo}>
-            <Text style={styles.actionIcon}>↶</Text>
-            <Text style={styles.actionLabel}>Undo</Text>
+        <View style={[styles.actionButtons, { backgroundColor: currentTheme.background, borderTopColor: currentTheme.shadowColor }]}>
+          <Pressable style={[styles.actionButton, { backgroundColor: currentTheme.buttonBackground }]} onPress={handleUndo}>
+            <UndoIcon color={currentTheme.primaryText} size={20} />
+            <Text style={[styles.actionLabel, { color: currentTheme.primaryText }]}>Undo</Text>
           </Pressable>
           
-          <Pressable style={styles.actionButton} onPress={handleClear}>
-            <Text style={styles.actionIcon}>🗑️</Text>
-            <Text style={styles.actionLabel}>Clear</Text>
+          <Pressable style={[styles.actionButton, { backgroundColor: currentTheme.buttonBackground }]} onPress={handleClear}>
+            <ClearIcon color={currentTheme.primaryText} size={20} />
+            <Text style={[styles.actionLabel, { color: currentTheme.primaryText }]}>Clear</Text>
           </Pressable>
         </View>
       </View>
@@ -352,7 +356,6 @@ export default function DrawingModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1419',
     position: 'absolute',
     top: 0,
     left: 0,
@@ -367,14 +370,20 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2f38',
   },
   headerButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   headerButtonText: {
-    color: '#9BA1A6',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -386,13 +395,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    color: '#ffffff',
     fontSize: 18,
     fontWeight: '700',
   },
   canvasContainer: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   toolSelection: {
     flexDirection: 'row',
@@ -400,29 +407,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#1a1d2e',
     borderTopWidth: 1,
-    borderTopColor: '#2a2f38',
     gap: 16,
   },
   toolOptions: {
-    backgroundColor: '#1a1d2e',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2a2f38',
-  },
-  eraserOptions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  pencilOptions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
   },
   drawingOptions: {
     flexDirection: 'row',
@@ -435,22 +426,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#1a1d2e',
     borderTopWidth: 1,
-    borderTopColor: '#2a2f38',
     gap: 24,
   },
   toolButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#2a2f38',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  toolIcon: {
-    fontSize: 20,
-    color: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   colorPicker: {
     flexDirection: 'row',
@@ -461,30 +450,25 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 2,
-    borderColor: '#2a2f38',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 3,
+    shadowRadius: 4,
     elevation: 3,
   },
   selectedColor: {
-    borderColor: '#ffffff',
     borderWidth: 3,
     transform: [{ scale: 1.15 }],
-    shadowColor: '#0066ff',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 6,
     elevation: 6,
   },
   activeTool: {
-    backgroundColor: '#0066ff',
     borderWidth: 2,
-    borderColor: '#ffffff',
   },
   optionLabel: {
-    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
     marginRight: 8,
@@ -495,78 +479,49 @@ const styles = StyleSheet.create({
   },
   sizeButton: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#2a2f38',
+    paddingVertical: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#3a3f48',
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   selectedSize: {
-    backgroundColor: '#0066ff',
-    borderColor: '#ffffff',
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 6,
   },
   sizeText: {
-    color: '#ffffff',
     fontSize: 12,
     fontWeight: '600',
   },
   actionButton: {
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: '#2a2f38',
-    borderWidth: 1,
-    borderColor: '#3a3f48',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 20,
     minWidth: 80,
-  },
-  actionIcon: {
-    fontSize: 20,
-    color: '#ffffff',
-    marginBottom: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   actionLabel: {
-    color: '#ffffff',
     fontSize: 12,
     fontWeight: '600',
   },
   sizeSelectorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
-  sizeSelectorTrack: {
-    height: 4,
-    backgroundColor: '#2a2f38',
-    borderRadius: 2,
-    position: 'relative',
-  },
-  sizeSelectorFill: {
-    height: 4,
-    backgroundColor: '#0066ff',
-    borderRadius: 2,
-    width: '100%',
-  },
-  sizeSelectorThumb: {
-    position: 'absolute',
-    top: -6,
-    width: 16,
-    height: 16,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#0066ff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  sizeSelectorValue: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-    minWidth: 30,
-    textAlign: 'center',
+  sizeIndicator: {
+    // This will be styled inline
   },
 });

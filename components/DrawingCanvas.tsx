@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, StyleSheet, PanResponder, Dimensions } from 'react-native';
+import { Svg, Path, Circle } from 'react-native-svg';
 import { DrawingStroke } from '@/lib/storage';
 
 interface Point {
@@ -37,13 +38,10 @@ export default function DrawingCanvas({
     setStrokes(initialStrokes || []);
   }, [initialStrokes]);
 
+  // Optimized PanResponder for Android
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
-    onStartShouldSetPanResponderCapture: () => true,
-    onMoveShouldSetPanResponderCapture: () => true,
-    onPanResponderTerminationRequest: () => false,
-    onShouldBlockNativeResponder: () => true,
     onPanResponderGrant: (evt) => {
       try {
         const { locationX, locationY } = evt.nativeEvent;
@@ -60,10 +58,10 @@ export default function DrawingCanvas({
           const newPoint = { x: locationX, y: locationY };
           
           setCurrentStroke(prev => {
-            // Simplified point filtering - only add if distance is significant
+            // More aggressive point filtering for better performance
             if (prev.length === 0 || 
-                Math.abs(prev[prev.length - 1].x - newPoint.x) > 2 || 
-                Math.abs(prev[prev.length - 1].y - newPoint.y) > 2) {
+                Math.abs(prev[prev.length - 1].x - newPoint.x) > 3 || 
+                Math.abs(prev[prev.length - 1].y - newPoint.y) > 3) {
               return [...prev, newPoint];
             }
             return prev;
@@ -77,8 +75,8 @@ export default function DrawingCanvas({
       try {
         if (isDrawing && currentStroke.length > 0) {
           if (isErasing) {
-            // Simple eraser - remove strokes that intersect with current path
-            const eraserRadius = strokeWidth * 2;
+            // Improved eraser logic
+            const eraserRadius = strokeWidth * 3;
             const updatedStrokes = strokes.filter(stroke => {
               return !currentStroke.some(eraserPoint => {
                 return stroke.points.some(strokePoint => {
@@ -94,7 +92,7 @@ export default function DrawingCanvas({
             setStrokes(updatedStrokes);
             onDrawingChange?.(updatedStrokes);
           } else {
-            // Add new stroke
+            // Add new stroke with better performance
             const newStroke: DrawingStroke = {
               id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
               points: [...currentStroke],
@@ -104,8 +102,10 @@ export default function DrawingCanvas({
             };
             
             const updatedStrokes = [...strokes, newStroke];
-            setStrokes(updatedStrokes);
-            onDrawingChange?.(updatedStrokes);
+            // Limit strokes to prevent memory issues
+            const limitedStrokes = updatedStrokes.slice(-30);
+            setStrokes(limitedStrokes);
+            onDrawingChange?.(limitedStrokes);
           }
         }
       } catch (error) {
@@ -117,146 +117,88 @@ export default function DrawingCanvas({
     },
   });
 
-  // Simplified stroke rendering using basic shapes
-  const renderStroke = (stroke: DrawingStroke, index: number) => {
-    if (!stroke || !stroke.points || stroke.points.length < 1) {
-      return null;
-    }
-
-    // For single point strokes (dots)
-    if (stroke.points.length === 1) {
-      const point = stroke.points[0];
-      return (
-        <View
-          key={`stroke-${stroke.id || index}`}
-          style={[
-            styles.strokePoint,
-            {
-              left: point.x - stroke.strokeWidth / 2,
-              top: point.y - stroke.strokeWidth / 2,
-              width: stroke.strokeWidth,
-              height: stroke.strokeWidth,
-              backgroundColor: stroke.color,
-              borderRadius: stroke.strokeWidth / 2,
-            }
-          ]}
-        />
-      );
-    }
-
-    // For multi-point strokes, render as connected segments
-    const segments = [];
-    for (let i = 0; i < stroke.points.length - 1; i++) {
-      const start = stroke.points[i];
-      const end = stroke.points[i + 1];
-      
-      const distance = Math.sqrt(
-        Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
-      );
-      
-      if (distance > 1) { // Only render if distance is significant
-        const angle = Math.atan2(end.y - start.y, end.x - start.x);
-        const midX = (start.x + end.x) / 2;
-        const midY = (start.y + end.y) / 2;
-        
-        segments.push(
-          <View
-            key={`${stroke.id}-segment-${i}`}
-            style={[
-              styles.strokeSegment,
-              {
-                left: midX - distance / 2,
-                top: midY - stroke.strokeWidth / 2,
-                width: distance,
-                height: stroke.strokeWidth,
-                backgroundColor: stroke.color,
-                borderRadius: stroke.strokeWidth / 2,
-                transform: [{ rotate: `${angle}rad` }],
-              }
-            ]}
-          />
-        );
-      }
+  // Convert points to SVG path string
+  const pointsToPath = (points: Point[]) => {
+    if (points.length === 0) return '';
+    if (points.length === 1) {
+      return `M${points[0].x},${points[0].y}`;
     }
     
-    return segments;
+    let path = `M${points[0].x},${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+      path += ` L${points[i].x},${points[i].y}`;
+    }
+    return path;
   };
 
-  // Render current stroke being drawn
-  const renderCurrentStroke = () => {
-    if (!isDrawing || currentStroke.length < 1) return null;
+  // Get stroke properties based on tool
+  const getStrokeProps = (stroke: DrawingStroke) => {
+    const baseProps = {
+      stroke: stroke.color,
+      strokeWidth: stroke.strokeWidth,
+      fill: 'none',
+      strokeLinecap: 'round' as const,
+      strokeLinejoin: 'round' as const,
+    };
 
-    // For single point
-    if (currentStroke.length === 1) {
-      const point = currentStroke[0];
-      return (
-        <View
-          key="current-point"
-          style={[
-            styles.currentStroke,
-            {
-              left: point.x - strokeWidth / 2,
-              top: point.y - strokeWidth / 2,
-              width: strokeWidth,
-              height: strokeWidth,
-              backgroundColor: strokeColor,
-              borderRadius: strokeWidth / 2,
-            }
-          ]}
-        />
-      );
+    switch (stroke.toolType) {
+      case 'marker':
+        return {
+          ...baseProps,
+          strokeOpacity: 0.8,
+        };
+      case 'brush':
+        return {
+          ...baseProps,
+          strokeOpacity: 0.7,
+        };
+      case 'pencil':
+      default:
+        return {
+          ...baseProps,
+          strokeOpacity: 1,
+        };
     }
-
-    // For multi-point current stroke
-    const segments = [];
-    for (let i = 0; i < currentStroke.length - 1; i++) {
-      const start = currentStroke[i];
-      const end = currentStroke[i + 1];
-      
-      const distance = Math.sqrt(
-        Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
-      );
-      
-      if (distance > 1) {
-        const angle = Math.atan2(end.y - start.y, end.x - start.x);
-        const midX = (start.x + end.x) / 2;
-        const midY = (start.y + end.y) / 2;
-        
-        segments.push(
-          <View
-            key={`current-segment-${i}`}
-            style={[
-              styles.currentStroke,
-              {
-                left: midX - distance / 2,
-                top: midY - strokeWidth / 2,
-                width: distance,
-                height: strokeWidth,
-                backgroundColor: strokeColor,
-                borderRadius: strokeWidth / 2,
-                transform: [{ rotate: `${angle}rad` }],
-              }
-            ]}
-          />
-        );
-      }
-    }
-    
-    return segments;
   };
 
   return (
     <View style={[styles.container, { width, height }]}>
-      <View
+      <Svg
+        width={width}
+        height={height}
         style={styles.canvas}
         {...panResponder.panHandlers}
       >
         {/* Render completed strokes */}
-        {strokes.map((stroke, index) => renderStroke(stroke, index))}
+        {strokes.map((stroke, index) => {
+          if (!stroke || !stroke.points || stroke.points.length === 0) return null;
+          
+          const path = pointsToPath(stroke.points);
+          if (!path) return null;
+          
+          return (
+            <Path
+              key={`stroke-${stroke.id || index}`}
+              d={path}
+              {...getStrokeProps(stroke)}
+            />
+          );
+        })}
         
         {/* Render current stroke */}
-        {renderCurrentStroke()}
-      </View>
+        {isDrawing && currentStroke.length > 0 && (
+          <Path
+            key="current-stroke"
+            d={pointsToPath(currentStroke)}
+            stroke={strokeColor}
+            strokeWidth={strokeWidth}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeOpacity={toolType === 'eraser' ? 0 : 1}
+          />
+        )}
+      </Svg>
     </View>
   );
 }
@@ -270,15 +212,5 @@ const styles = StyleSheet.create({
   canvas: {
     flex: 1,
     backgroundColor: '#0f1419',
-    position: 'relative',
-  },
-  strokePoint: {
-    position: 'absolute',
-  },
-  strokeSegment: {
-    position: 'absolute',
-  },
-  currentStroke: {
-    position: 'absolute',
   },
 });
