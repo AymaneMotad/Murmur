@@ -103,6 +103,25 @@ export default function RecordingScreen() {
       setElapsedMs(0);
       startTimer();
       
+      // Start speech recognition if available
+      try {
+        const voice = await import('@react-native-voice/voice');
+        voice.default.onSpeechResults = (e: any) => {
+          const values: string[] = e.value || [];
+          if (values.length > 0) {
+            setTranscript(values[0]);
+          }
+        };
+        voice.default.onSpeechError = (e: any) => {
+          console.log('Speech recognition error:', e.error);
+        };
+        await voice.default.start('en-US');
+        console.log('Speech recognition started');
+      } catch (error) {
+        console.log('Speech recognition not available:', error);
+        // Continue without speech recognition
+      }
+      
       console.log('Recording started successfully');
     } catch (error) {
       console.error('Error starting recording:', error);
@@ -141,6 +160,15 @@ export default function RecordingScreen() {
         await recording.stopAndUnloadAsync();
         console.log('Recording stopped successfully');
       }
+      
+      // Stop speech recognition if it was started
+      try {
+        const voice = await import('@react-native-voice/voice');
+        await voice.default.stop();
+        console.log('Speech recognition stopped');
+      } catch (error) {
+        console.log('Speech recognition stop error:', error);
+      }
     } catch (error) {
       console.error('Error stopping recording:', error);
     }
@@ -148,8 +176,14 @@ export default function RecordingScreen() {
     // Update state and show review modal
     setIsRecording(false);
     setIsProcessing(false);
+    
+    // If no transcript was captured, provide a placeholder
+    if (!transcript.trim()) {
+      setTranscript('Tap to add your notes...');
+    }
+    
     setShowReview(true);
-  }, [recording, scaleAnim]);
+  }, [recording, scaleAnim, transcript]);
 
   // Handle microphone button press - toggle recording
   const onMicPress = useCallback(() => {
@@ -405,7 +439,7 @@ export default function RecordingScreen() {
         <View style={styles.headerLeft}>
           <Text style={styles.title}>Murmur</Text>
           <Text style={styles.subtitle}>
-            {isProcessing ? 'Processing…' : isRecording ? 'Recording…' : 'Your thoughts, amplified'}
+            {isProcessing ? 'Processing your recording…' : isRecording ? 'Recording…' : 'Your thoughts, amplified'}
           </Text>
         </View>
         <Pressable 
@@ -500,9 +534,10 @@ export default function RecordingScreen() {
               style={styles.input}
               multiline
               value={transcript}
-              placeholder="Transcription"
+              placeholder="Your notes will appear here..."
               placeholderTextColor="#666"
               onChangeText={setTranscript}
+              autoFocus={!transcript || transcript === 'Tap to add your notes...'}
             />
             <View style={styles.modalActions}>
               <Pressable style={[styles.actionBtn, styles.cancel]} onPress={() => { 
