@@ -4,6 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
 import { getAllNotes, MurmurNote, updateNote, deleteNote, DrawingStroke } from '@/lib/storage';
 import DrawingModal from '@/components/DrawingModal';
+import { lightTheme, darkTheme, createNeumorphicStyles } from '@/constants/neumorphic-theme';
+import { useTheme } from '@/hooks/use-theme';
 
 interface SwipeableNoteProps {
   item: MurmurNote;
@@ -12,9 +14,10 @@ interface SwipeableNoteProps {
   onAddDrawing: (note: MurmurNote) => void;
   formatDate: (timestamp: number) => string;
   index: number;
+  theme: any;
 }
 
-const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, onAddDrawing, formatDate, index }) => {
+const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, onAddDrawing, formatDate, index, theme }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
   
@@ -140,7 +143,18 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, o
       {/* Swipeable note content */}
       <Animated.View 
         style={[
-          styles.noteCard, 
+          {
+            backgroundColor: theme.cardBackground,
+            borderRadius: 20,
+            borderWidth: 0,
+            position: 'relative' as const,
+            zIndex: 2,
+            shadowColor: theme.shadowColor,
+            shadowOffset: { width: 6, height: 6 },
+            shadowOpacity: 0.8,
+            shadowRadius: 12,
+            elevation: 8,
+          },
           { 
             transform: [
               { translateX },
@@ -156,38 +170,50 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, o
           <View style={styles.noteHeader}>
             <View style={styles.noteMeta}>
               <View style={styles.noteDateContainer}>
-                <Text style={styles.noteDate}>{formatDate(item.createdAt)}</Text>
+                <Text style={{ color: theme.secondaryText, fontSize: 13, fontWeight: '500', letterSpacing: 0.3 }}>{formatDate(item.createdAt)}</Text>
                 {item.modifiedAt !== item.createdAt && (
-                  <View style={styles.editedIndicator}>
-                    <Text style={styles.editedText}>Edited</Text>
+                  <View style={{ backgroundColor: theme.accentColor, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
+                    <Text style={{ color: theme.primaryText, fontSize: 11, fontWeight: '600', letterSpacing: 0.5 }}>Edited</Text>
                   </View>
                 )}
                 {item.drawing && item.drawing.length > 0 && (
-                  <View style={styles.drawingIndicator}>
-                    <Text style={styles.drawingText}>🎨</Text>
+                  <View style={{ backgroundColor: theme.accentColor, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 8 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '600' }}>🎨</Text>
                   </View>
                 )}
               </View>
             </View>
             <View style={styles.noteActions}>
               <Pressable 
-                style={styles.drawingButton}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: theme.buttonBackground,
+                  alignItems: 'center' as const,
+                  justifyContent: 'center' as const,
+                  shadowColor: theme.shadowColor,
+                  shadowOffset: { width: 4, height: 4 },
+                  shadowOpacity: 0.8,
+                  shadowRadius: 8,
+                  elevation: 6,
+                }}
                 onPress={() => onAddDrawing(item)}
               >
                 <View style={styles.pencilIcon}>
-                  <View style={styles.pencilBody} />
-                  <View style={styles.pencilTip} />
+                  <View style={[styles.pencilBody, { backgroundColor: theme.primaryText }]} />
+                  <View style={[styles.pencilTip, { borderBottomColor: theme.accentColor }]} />
                 </View>
               </Pressable>
             </View>
           </View>
           
           <Pressable onPress={() => onEdit(item)}>
-            <Text style={styles.noteText} numberOfLines={0}>
+            <Text style={{ color: theme.primaryText, fontSize: 16, lineHeight: 24, fontWeight: '400', letterSpacing: 0.2 }} numberOfLines={0}>
               {item.text}
             </Text>
             {item.text.length > 200 && (
-              <Text style={styles.readMoreText}>Tap to open full view...</Text>
+              <Text style={{ color: theme.accentColor, fontSize: 14, fontWeight: '600', marginTop: 8, textAlign: 'right' }}>Tap to open full view...</Text>
             )}
           </Pressable>
           
@@ -198,6 +224,7 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, o
 };
 
 export default function NotesScreen() {
+  const { isDark } = useTheme();
   const [notes, setNotes] = useState<MurmurNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [drawingNote, setDrawingNote] = useState<MurmurNote | null>(null);
@@ -206,6 +233,10 @@ export default function NotesScreen() {
   // Header animation values
   const headerOpacity = useRef(new Animated.Value(0)).current;
   const headerTranslateY = useRef(new Animated.Value(-20)).current;
+  
+  // Get current theme
+  const currentTheme = isDark ? darkTheme : lightTheme;
+  const neumorphicStyles = createNeumorphicStyles(currentTheme);
 
   useEffect(() => {
     loadNotes();
@@ -318,61 +349,72 @@ export default function NotesScreen() {
         onAddDrawing={handleAddDrawing}
         formatDate={formatDate}
         index={index}
+        theme={currentTheme}
       />
     );
   };
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyTitle}>No notes yet</Text>
-      <Text style={styles.emptySubtitle}>Start recording to create your first note</Text>
+      <Text style={neumorphicStyles.emptyTitle}>No notes yet</Text>
+      <Text style={neumorphicStyles.emptySubtitle}>Start recording to create your first note</Text>
     </View>
   );
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
+      <View style={neumorphicStyles.container}>
+        <StatusBar style={isDark ? "light" : "dark"} />
         <Animated.View style={[
-          styles.header,
+          neumorphicStyles.header,
           {
             opacity: headerOpacity,
             transform: [{ translateY: headerTranslateY }]
           }
         ]}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backText}>← Back</Text>
+          <Pressable onPress={() => router.back()} style={neumorphicStyles.backButton}>
+            <Text style={neumorphicStyles.backText}>← Back</Text>
           </Pressable>
-          <Text style={styles.headerTitle}>Notes</Text>
-          <View style={styles.placeholder} />
+          <Text style={neumorphicStyles.headerTitle}>Notes</Text>
+          <Pressable 
+            onPress={() => router.push('/settings')} 
+            style={neumorphicStyles.backButton}
+          >
+            <Text style={neumorphicStyles.backText}>⚙️</Text>
+          </Pressable>
         </Animated.View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
+          <Text style={neumorphicStyles.loadingText}>Loading...</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+    <View style={neumorphicStyles.container}>
+      <StatusBar style={isDark ? "light" : "dark"} />
       
       {/* Header */}
       <Animated.View style={[
-        styles.header,
+        neumorphicStyles.header,
         {
           opacity: headerOpacity,
           transform: [{ translateY: headerTranslateY }]
         }
       ]}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>←</Text>
+        <Pressable onPress={() => router.back()} style={neumorphicStyles.backButton}>
+          <Text style={neumorphicStyles.backText}>←</Text>
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Notes</Text>
-          <Text style={styles.headerSubtitle}>{notes.length} {notes.length === 1 ? 'note' : 'notes'}</Text>
+          <Text style={neumorphicStyles.headerTitle}>Notes</Text>
+          <Text style={neumorphicStyles.headerSubtitle}>{notes.length} {notes.length === 1 ? 'note' : 'notes'}</Text>
         </View>
-        <View style={styles.placeholder} />
+        <Pressable 
+          onPress={() => router.push('/settings')} 
+          style={neumorphicStyles.backButton}
+        >
+          <Text style={neumorphicStyles.backText}>⚙️</Text>
+        </Pressable>
       </Animated.View>
       
       {/* Notes List */}
@@ -401,7 +443,7 @@ export default function NotesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0d12',
+    backgroundColor: '#E8EDF3', // Light neumorphic background
   },
   header: {
     flexDirection: 'row',
@@ -410,25 +452,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 24,
-    backgroundColor: '#0a0d12',
+    backgroundColor: '#E8EDF3',
   },
   backButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1a1d2e',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E8EDF3',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#2a2f38',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: '#C9D3E0',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+    elevation: 8,
+    // Neumorphic raised effect
+    borderWidth: 0,
   },
   backText: {
-    color: '#0066ff',
+    color: '#333D4A',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -437,13 +479,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    color: '#ffffff',
+    color: '#333D4A',
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
   headerSubtitle: {
-    color: '#9BA1A6',
+    color: '#7B8794',
     fontSize: 14,
     fontWeight: '500',
     marginTop: 2,
@@ -461,8 +503,8 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: '#1a1d2e',
-    marginVertical: 8,
+    backgroundColor: 'transparent',
+    marginVertical: 12,
     marginHorizontal: 20,
   },
   noteCardContainer: {
@@ -548,24 +590,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   noteCard: {
-    backgroundColor: '#1a1d2e',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#2a2f38',
+    backgroundColor: '#E8EDF3',
+    borderRadius: 20,
+    borderWidth: 0,
     position: 'relative',
     zIndex: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
+    shadowColor: '#C9D3E0',
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.8,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 8,
+    // Neumorphic raised effect
   },
   noteContent: {
     padding: 20,
-    backgroundColor: '#1a1d2e',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#2a2f38',
+    backgroundColor: 'transparent',
+    borderRadius: 20,
+    borderWidth: 0,
   },
   noteHeader: {
     flexDirection: 'row',
@@ -582,39 +623,39 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   noteDate: {
-    color: '#9BA1A6',
+    color: '#7B8794',
     fontSize: 13,
     fontWeight: '500',
     letterSpacing: 0.3,
   },
   editedIndicator: {
-    backgroundColor: '#0066ff',
+    backgroundColor: '#C4D2E1',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
   },
   editedText: {
-    color: '#ffffff',
+    color: '#333D4A',
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
   noteText: {
-    color: '#ffffff',
+    color: '#333D4A',
     fontSize: 16,
     lineHeight: 24,
     fontWeight: '400',
     letterSpacing: 0.2,
   },
   readMoreText: {
-    color: '#0066ff',
+    color: '#C4D2E1',
     fontSize: 14,
     fontWeight: '600',
     marginTop: 8,
     textAlign: 'right',
   },
   drawingIndicator: {
-    backgroundColor: '#0066ff',
+    backgroundColor: '#C4D2E1',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -628,17 +669,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   drawingButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#ffffff',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E8EDF3',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: '#C9D3E0',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+    elevation: 6,
+    // Neumorphic raised effect
   },
   pencilIcon: {
     width: 16,
@@ -650,7 +692,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 12,
     height: 2,
-    backgroundColor: '#0066ff',
+    backgroundColor: '#333D4A',
     borderRadius: 1,
     top: 7,
     left: 2,
@@ -664,7 +706,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 6,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderBottomColor: '#ff6b35',
+    borderBottomColor: '#C4D2E1',
     top: 0,
     left: 5,
   },
@@ -675,13 +717,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    color: '#ffffff',
+    color: '#333D4A',
     fontSize: 24,
     fontWeight: '600',
     marginBottom: 8,
   },
   emptySubtitle: {
-    color: '#666',
+    color: '#7B8794',
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 22,
@@ -692,7 +734,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: '#7B8794',
     fontSize: 16,
   },
   placeholder: {

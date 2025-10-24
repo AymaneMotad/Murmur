@@ -22,7 +22,7 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const systemColorScheme = useColorScheme();
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('dark');
   const [isLoading, setIsLoading] = useState(true);
 
   const isDark = themeMode === 'dark' || (themeMode === 'system' && systemColorScheme === 'dark');

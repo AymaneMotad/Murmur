@@ -308,30 +308,30 @@ export default function RecordingScreen() {
     container: {
       flex: 1,
       backgroundColor: theme.background,
-      paddingHorizontal: Math.max(20, width * 0.05), // Responsive padding
-      paddingTop: Math.max(60, height * 0.08), // Responsive top padding
-      paddingBottom: Math.max(40, height * 0.05), // Responsive bottom padding
     },
     header: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 48,
+      paddingHorizontal: 24,
+      paddingTop: 60,
+      paddingBottom: 32,
     },
     headerLeft: {
       flex: 1,
     },
     settingsButton: {
-      padding: 16,
-      borderRadius: 16,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
       backgroundColor: theme.surface,
-      borderWidth: 1,
-      borderColor: theme.border,
-      shadowColor: theme.primary,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: theme.border,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.8,
+      shadowRadius: 8,
+      elevation: 6,
     },
     settingsButtonText: {
       fontSize: 20,
@@ -339,63 +339,64 @@ export default function RecordingScreen() {
     },
     title: {
       color: theme.text,
-      fontSize: Math.max(28, width * 0.08), // Responsive font size
-      fontWeight: '700',
-      marginBottom: 12,
-      letterSpacing: -0.8,
+      fontSize: 32,
+      fontWeight: '800',
+      marginBottom: 8,
+      letterSpacing: -0.5,
     },
     subtitle: {
       color: theme.textSecondary,
-      fontSize: Math.max(16, width * 0.045), // Responsive font size
-      lineHeight: Math.max(24, width * 0.06), // Responsive line height
-      maxWidth: Math.min(320, width * 0.8), // Responsive max width
+      fontSize: 18,
+      lineHeight: 24,
+      maxWidth: 280,
     },
     mainContent: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
+      paddingHorizontal: 24,
     },
     timerContainer: {
       alignItems: 'center',
-      marginBottom: 80,
+      marginBottom: 60,
     },
     timer: {
       color: theme.text,
-      fontSize: Math.max(40, width * 0.12), // Responsive timer font size
-      fontWeight: '300',
+      fontSize: 64,
+      fontWeight: '200',
       fontVariant: ['tabular-nums'],
-      letterSpacing: 3,
+      letterSpacing: 2,
+      marginBottom: 16,
     },
     recordingIndicator: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 16,
       backgroundColor: theme.error,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 24,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 30,
       shadowColor: theme.error,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.6,
       shadowRadius: 8,
-      elevation: 4,
+      elevation: 6,
     },
     recordingDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
+      width: 12,
+      height: 12,
+      borderRadius: 6,
       backgroundColor: theme.textInverse,
-      marginRight: 10,
+      marginRight: 12,
     },
     recordingText: {
       color: theme.textInverse,
-      fontSize: 14,
-      fontWeight: '600',
-      letterSpacing: 1.2,
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: 1.5,
     },
     micContainer: {
       alignItems: 'center',
-      marginBottom: 60,
+      marginBottom: 40,
       position: 'relative',
     },
     micButtonWrapper: {
@@ -403,58 +404,58 @@ export default function RecordingScreen() {
       justifyContent: 'center',
     },
     micButton: {
-      padding: 12,
+      padding: 16,
     },
     micButtonPressed: {
       opacity: 0.9,
     },
     micButtonInner: {
-      width: Math.max(160, Math.min(220, width * 0.5)), // Responsive mic button size
-      height: Math.max(160, Math.min(220, width * 0.5)), // Responsive mic button size
-      borderRadius: Math.max(80, Math.min(110, width * 0.25)), // Responsive border radius
+      width: 200,
+      height: 200,
+      borderRadius: 100,
       alignItems: 'center',
       justifyContent: 'center',
-      shadowColor: theme.primary,
-      shadowOffset: { width: 0, height: 12 },
-      shadowOpacity: 0.25,
-      shadowRadius: 20,
+      shadowColor: theme.border,
+      shadowOffset: { width: 8, height: 8 },
+      shadowOpacity: 0.6,
+      shadowRadius: 16,
       elevation: 12,
     },
     micIcon: {
       color: theme.textInverse,
-      fontSize: Math.max(60, width * 0.18), // Responsive icon size
+      fontSize: 72,
       fontWeight: 'bold',
     },
     hint: {
       color: theme.textSecondary,
-      fontSize: Math.max(16, width * 0.045), // Responsive font size
+      fontSize: 18,
       textAlign: 'center',
-      lineHeight: Math.max(24, width * 0.06), // Responsive line height
-      maxWidth: Math.min(350, width * 0.85), // Responsive max width
-      fontWeight: '400',
+      lineHeight: 24,
+      maxWidth: 300,
+      fontWeight: '500',
     },
     bottomNav: {
       alignItems: 'center',
-      paddingTop: 24,
+      paddingHorizontal: 24,
+      paddingTop: 32,
+      paddingBottom: 40,
     },
     notesButton: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.surface,
-      paddingHorizontal: 24,
-      paddingVertical: 16,
-      borderRadius: 28,
-      borderWidth: 1,
-      borderColor: theme.border,
-      shadowColor: theme.primary,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
+      paddingHorizontal: 32,
+      paddingVertical: 20,
+      borderRadius: 30,
+      shadowColor: theme.border,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.8,
       shadowRadius: 8,
-      elevation: 4,
+      elevation: 6,
     },
     notesButtonIcon: {
-      fontSize: 20,
-      marginRight: 10,
+      fontSize: 22,
+      marginRight: 12,
     },
     notesButtonText: {
       color: theme.text,
@@ -472,13 +473,11 @@ export default function RecordingScreen() {
       borderTopLeftRadius: 28,
       borderTopRightRadius: 28,
       minHeight: '50%',
-      borderTopWidth: 1,
-      borderTopColor: theme.border,
-      shadowColor: theme.primary,
-      shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 8,
+      shadowColor: theme.border,
+      shadowOffset: { width: 8, height: 8 },
+      shadowOpacity: 0.6,
+      shadowRadius: 16,
+      elevation: 12,
     },
     modalTitle: {
       color: theme.text,
@@ -498,6 +497,11 @@ export default function RecordingScreen() {
       textAlignVertical: 'top',
       fontSize: 18,
       lineHeight: 26,
+      shadowColor: theme.border,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: -4,
     },
     modalActions: {
       flexDirection: 'row',
@@ -508,22 +512,27 @@ export default function RecordingScreen() {
     actionBtn: {
       paddingHorizontal: 32,
       paddingVertical: 18,
-      borderRadius: 16,
+      borderRadius: 20,
       minWidth: 140,
       alignItems: 'center',
     },
     save: { 
       backgroundColor: theme.primary,
-      shadowColor: theme.primary,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.3,
-      shadowRadius: 12,
-      elevation: 8,
+      shadowColor: theme.border,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.8,
+      shadowRadius: 8,
+      elevation: 6,
     },
     cancel: { 
       backgroundColor: theme.surface,
       borderWidth: 1,
       borderColor: theme.border,
+      shadowColor: theme.border,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.8,
+      shadowRadius: 8,
+      elevation: 6,
     },
     actionText: { 
       color: theme.textInverse, 
@@ -588,7 +597,7 @@ export default function RecordingScreen() {
                 style={[
                   styles.micButtonInner,
                   {
-                    backgroundColor: isProcessing ? '#ff6b35' : '#0066ff',
+                    backgroundColor: isProcessing ? theme.warning : theme.primary,
                     transform: [
                       {
                         scale: Animated.multiply(
@@ -613,19 +622,6 @@ export default function RecordingScreen() {
         <Text style={styles.hint}>
           {isRecording ? 'Tap to stop recording' : 'Tap to start recording'}
         </Text>
-        
-        {/* Debug test button */}
-        {__DEV__ && (
-          <Pressable 
-            style={{ backgroundColor: '#0066ff', padding: 10, marginTop: 10, borderRadius: 8 }}
-            onPress={() => {
-              console.log('Test button pressed');
-              setTranscript('Test transcription - this should appear in the textbox');
-            }}
-          >
-            <Text style={{ color: 'white', textAlign: 'center' }}>Test Transcription</Text>
-          </Pressable>
-        )}
       </View>
 
       {/* Bottom Navigation */}
@@ -636,7 +632,7 @@ export default function RecordingScreen() {
           android_ripple={{ color: 'rgba(255,255,255,0.1)', borderless: true }}
         >
           <Text style={styles.notesButtonIcon}>📝</Text>
-          <Text style={styles.notesButtonText}>Notes</Text>
+          <Text style={styles.notesButtonText}>View Notes</Text>
         </Pressable>
       </View>
 
@@ -644,13 +640,13 @@ export default function RecordingScreen() {
       <Modal transparent visible={showReview} animationType="slide" onRequestClose={() => setShowReview(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Review</Text>
+            <Text style={styles.modalTitle}>Review Your Note</Text>
             <TextInput
               style={styles.input}
               multiline
               value={transcript}
               placeholder="Your notes will appear here..."
-              placeholderTextColor="#666"
+              placeholderTextColor={theme.textSecondary}
               onChangeText={setTranscript}
               autoFocus={!transcript || transcript === 'Tap to add your notes...'}
             />
@@ -660,7 +656,7 @@ export default function RecordingScreen() {
                 setTranscript(''); 
                 setElapsedMs(0); // Reset timer when discarding
               }}>
-                <Text style={styles.actionText}>Discard</Text>
+                <Text style={[styles.actionText, { color: theme.text }]}>Discard</Text>
               </Pressable>
               <Pressable
                 style={[styles.actionBtn, styles.save]}
@@ -674,7 +670,7 @@ export default function RecordingScreen() {
                   setElapsedMs(0);
                 }}
               >
-                <Text style={styles.actionText}>Save</Text>
+                <Text style={styles.actionText}>Save Note</Text>
               </Pressable>
             </View>
           </View>

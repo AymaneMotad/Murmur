@@ -19,33 +19,33 @@ const infoBlue = '#33b5e5';
 export const Colors = {
   light: {
     // Primary colors
-    primary: primaryBlue,
-    primaryLight: primaryBlueLight,
-    primaryDark: primaryBlueDark,
+    primary: '#3498DB',
+    primaryLight: '#4d94ff',
+    primaryDark: '#0052cc',
     
-    // Background colors
-    background: '#ffffff',
-    backgroundSecondary: '#f8f9fa',
-    backgroundTertiary: '#f1f3f4',
-    surface: '#ffffff',
-    surfaceElevated: '#ffffff',
+    // Background colors - Neumorphic light theme
+    background: '#E8EDF3',
+    backgroundSecondary: '#F5F7FA',
+    backgroundTertiary: '#E8EDF3',
+    surface: '#F5F7FA',
+    surfaceElevated: '#F5F7FA',
     
     // Text colors
-    text: '#1a1a1a',
-    textSecondary: '#6c757d',
+    text: '#2C3E50',
+    textSecondary: '#7B8794',
     textTertiary: '#9ca3af',
-    textInverse: '#ffffff',
+    textInverse: '#FFFFFF',
     
     // Border colors
-    border: '#e5e7eb',
-    borderLight: '#f3f4f6',
-    borderDark: '#d1d5db',
+    border: '#BDC3C7',
+    borderLight: '#BDC3C7',
+    borderDark: '#BDC3C7',
     
     // Interactive colors
-    tint: primaryBlue,
-    tabIconDefault: '#6b7280',
-    tabIconSelected: primaryBlue,
-    icon: '#6b7280',
+    tint: '#3498DB',
+    tabIconDefault: '#7B8794',
+    tabIconSelected: '#3498DB',
+    icon: '#7B8794',
     iconSecondary: '#9ca3af',
     
     // Status colors
@@ -54,60 +54,60 @@ export const Colors = {
     error: errorRed,
     info: infoBlue,
     
-    // Card colors
-    cardBackground: '#ffffff',
-    cardBorder: '#e5e7eb',
-    cardShadow: 'rgba(0, 0, 0, 0.1)',
+    // Card colors - Neumorphic
+    cardBackground: '#F5F7FA',
+    cardBorder: '#BDC3C7',
+    cardShadow: '#BDC3C7',
     
-    // Button colors
-    buttonPrimary: primaryBlue,
+    // Button colors - Neumorphic
+    buttonPrimary: '#3498DB',
     buttonPrimaryText: '#ffffff',
-    buttonSecondary: '#f8f9fa',
-    buttonSecondaryText: '#1a1a1a',
+    buttonSecondary: '#F5F7FA',
+    buttonSecondaryText: '#2C3E50',
     buttonDanger: errorRed,
     buttonDangerText: '#ffffff',
     
-    // Input colors
-    inputBackground: '#ffffff',
-    inputBorder: '#d1d5db',
-    inputBorderFocused: primaryBlue,
-    inputPlaceholder: '#9ca3af',
+    // Input colors - Neumorphic
+    inputBackground: '#E8EDF3',
+    inputBorder: '#BDC3C7',
+    inputBorderFocused: '#3498DB',
+    inputPlaceholder: '#7B8794',
     
     // Navigation
-    navBackground: '#ffffff',
-    navBorder: '#e5e7eb',
-    navActive: primaryBlue,
-    navInactive: '#6b7280',
+    navBackground: '#E8EDF3',
+    navBorder: '#BDC3C7',
+    navActive: '#3498DB',
+    navInactive: '#7B8794',
   },
   dark: {
     // Primary colors
-    primary: primaryBlue,
-    primaryLight: primaryBlueLight,
-    primaryDark: primaryBlueDark,
+    primary: '#3498DB',
+    primaryLight: '#4d94ff',
+    primaryDark: '#0052cc',
     
-    // Background colors
-    background: '#0f1419',
-    backgroundSecondary: '#1a1d2e',
-    backgroundTertiary: '#252a3a',
-    surface: '#1a1d2e',
-    surfaceElevated: '#252a3a',
+    // Background colors - Neumorphic dark theme
+    background: '#1a1d2e',
+    backgroundSecondary: '#2C3E50',
+    backgroundTertiary: '#1a1d2e',
+    surface: '#2C3E50',
+    surfaceElevated: '#2C3E50',
     
     // Text colors
-    text: '#ffffff',
-    textSecondary: '#9ba1a6',
+    text: '#ECF0F1',
+    textSecondary: '#BDC3C7',
     textTertiary: '#6b7280',
-    textInverse: '#0f1419',
+    textInverse: '#1a1d2e',
     
     // Border colors
-    border: '#374151',
-    borderLight: '#4b5563',
-    borderDark: '#1f2937',
+    border: '#0f1419',
+    borderLight: '#0f1419',
+    borderDark: '#0f1419',
     
     // Interactive colors
-    tint: primaryBlue,
-    tabIconDefault: '#9ba1a6',
-    tabIconSelected: primaryBlue,
-    icon: '#9ba1a6',
+    tint: '#3498DB',
+    tabIconDefault: '#BDC3C7',
+    tabIconSelected: '#3498DB',
+    icon: '#BDC3C7',
     iconSecondary: '#6b7280',
     
     // Status colors
@@ -116,30 +116,30 @@ export const Colors = {
     error: errorRed,
     info: infoBlue,
     
-    // Card colors
-    cardBackground: '#1a1d2e',
-    cardBorder: '#374151',
-    cardShadow: 'rgba(0, 0, 0, 0.3)',
+    // Card colors - Neumorphic
+    cardBackground: '#2C3E50',
+    cardBorder: '#0f1419',
+    cardShadow: '#0f1419',
     
-    // Button colors
-    buttonPrimary: primaryBlue,
+    // Button colors - Neumorphic
+    buttonPrimary: '#3498DB',
     buttonPrimaryText: '#ffffff',
-    buttonSecondary: '#374151',
-    buttonSecondaryText: '#ffffff',
+    buttonSecondary: '#2C3E50',
+    buttonSecondaryText: '#ECF0F1',
     buttonDanger: errorRed,
     buttonDangerText: '#ffffff',
     
-    // Input colors
+    // Input colors - Neumorphic
     inputBackground: '#1a1d2e',
-    inputBorder: '#374151',
-    inputBorderFocused: primaryBlue,
-    inputPlaceholder: '#6b7280',
+    inputBorder: '#0f1419',
+    inputBorderFocused: '#3498DB',
+    inputPlaceholder: '#BDC3C7',
     
     // Navigation
-    navBackground: '#0f1419',
-    navBorder: '#374151',
-    navActive: primaryBlue,
-    navInactive: '#9ba1a6',
+    navBackground: '#1a1d2e',
+    navBorder: '#0f1419',
+    navActive: '#3498DB',
+    navInactive: '#BDC3C7',
   },
 };
 

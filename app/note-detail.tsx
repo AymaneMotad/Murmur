@@ -5,8 +5,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { getAllNotes, MurmurNote, updateNote, deleteNote } from '@/lib/storage';
 import DrawingModal from '@/components/DrawingModal';
 import MindMapView from '@/components/MindMapView';
+import { useTheme } from '@/hooks/use-theme';
+import { lightTheme, darkTheme, createNeumorphicStyles } from '@/constants/neumorphic-theme';
 
 export default function NoteDetailScreen() {
+  const { isDark } = useTheme();
   const { noteId } = useLocalSearchParams<{ noteId: string }>();
   const [note, setNote] = useState<MurmurNote | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,6 +22,10 @@ export default function NoteDetailScreen() {
   const [previousText, setPreviousText] = useState('');
   const [canUndo, setCanUndo] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Get current theme
+  const currentTheme = isDark ? darkTheme : lightTheme;
+  const neumorphicStyles = createNeumorphicStyles(currentTheme);
 
   useEffect(() => {
     loadNote();
@@ -159,17 +166,17 @@ export default function NoteDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backText}>←</Text>
+      <View style={neumorphicStyles.container}>
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <View style={neumorphicStyles.header}>
+          <Pressable onPress={() => router.back()} style={neumorphicStyles.backButton}>
+            <Text style={neumorphicStyles.backText}>←</Text>
           </Pressable>
-          <Text style={styles.headerTitle}>Loading...</Text>
+          <Text style={neumorphicStyles.headerTitle}>Loading...</Text>
           <View style={styles.placeholder} />
         </View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading note...</Text>
+          <Text style={neumorphicStyles.loadingText}>Loading note...</Text>
         </View>
       </View>
     );
@@ -177,44 +184,44 @@ export default function NoteDetailScreen() {
 
   if (!note) {
     return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backText}>←</Text>
+      <View style={neumorphicStyles.container}>
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <View style={neumorphicStyles.header}>
+          <Pressable onPress={() => router.back()} style={neumorphicStyles.backButton}>
+            <Text style={neumorphicStyles.backText}>←</Text>
           </Pressable>
-          <Text style={styles.headerTitle}>Note Not Found</Text>
+          <Text style={neumorphicStyles.headerTitle}>Note Not Found</Text>
           <View style={styles.placeholder} />
         </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Note not found</Text>
+          <Text style={[styles.errorText, { color: currentTheme.deleteBackground }]}>Note not found</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+    <View style={neumorphicStyles.container}>
+      <StatusBar style={isDark ? "light" : "dark"} />
       
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>←</Text>
+      <View style={neumorphicStyles.header}>
+        <Pressable onPress={() => router.back()} style={neumorphicStyles.backButton}>
+          <Text style={neumorphicStyles.backText}>←</Text>
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Note</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={neumorphicStyles.headerTitle}>Note</Text>
+          <Text style={neumorphicStyles.headerSubtitle}>
             {formatDate(note.createdAt)}
           </Text>
         </View>
         <View style={styles.headerActions}>
           {isEditing && canUndo && (
-            <Pressable onPress={handleUndo} style={styles.undoHeaderButton}>
-              <Text style={styles.undoHeaderText}>↶</Text>
+            <Pressable onPress={handleUndo} style={[neumorphicStyles.backButton, { backgroundColor: currentTheme.accentColor }]}>
+              <Text style={[neumorphicStyles.backText, { color: currentTheme.primaryText }]}>↶</Text>
             </Pressable>
           )}
-          <Pressable onPress={handleDeleteNote} style={styles.deleteButton}>
+          <Pressable onPress={handleDeleteNote} style={[neumorphicStyles.backButton, { backgroundColor: currentTheme.deleteBackground }]}>
             <View style={styles.deleteIcon}>
               <View style={styles.deleteIconBody} />
               <View style={styles.deleteIconLid} />
@@ -230,11 +237,11 @@ export default function NoteDetailScreen() {
         {isEditing ? (
           <View style={styles.editContainer}>
             <TextInput
-              style={styles.editInput}
+              style={[neumorphicStyles.input, { color: currentTheme.primaryText, minHeight: 200 }]}
               multiline
               value={editText}
               placeholder="Start typing your note..."
-              placeholderTextColor="#666"
+              placeholderTextColor={currentTheme.secondaryText}
               onChangeText={handleTextChange}
               autoFocus
             />
@@ -242,14 +249,14 @@ export default function NoteDetailScreen() {
         ) : (
           <View style={styles.noteContainer}>
             <Pressable onPress={handleStartEditing} style={styles.noteTextContainer}>
-              <Text style={styles.noteText}>{note.text}</Text>
+              <Text style={[neumorphicStyles.noteText, { color: currentTheme.primaryText }]}>{note.text}</Text>
             </Pressable>
             
             {note.drawing && note.drawing.length > 0 && (
               <View style={styles.drawingContainer}>
-                <Text style={styles.drawingLabel}>Drawing:</Text>
-                <View style={styles.drawingIndicator}>
-                  <Text style={styles.drawingText}>🎨 Drawing attached</Text>
+                <Text style={[styles.drawingLabel, { color: currentTheme.secondaryText }]}>Drawing:</Text>
+                <View style={[styles.drawingIndicator, { backgroundColor: currentTheme.accentColor }]}>
+                  <Text style={[styles.drawingText, { color: currentTheme.primaryText }]}>🎨 Drawing attached</Text>
                 </View>
               </View>
             )}
@@ -258,38 +265,38 @@ export default function NoteDetailScreen() {
       </ScrollView>
 
       {/* Bottom Action Buttons */}
-      <View style={styles.bottomActions}>
+      <View style={[styles.bottomActions, { backgroundColor: currentTheme.background, borderTopColor: currentTheme.border }]}>
         <Pressable 
           style={styles.actionButton}
           onPress={() => setShowDrawingModal(true)}
         >
-          <View style={styles.actionIcon}>
+          <View style={[neumorphicStyles.button, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]}>
             <Text style={styles.actionIconText}>✏️</Text>
           </View>
-          <Text style={styles.actionLabel}>Draw</Text>
+          <Text style={[styles.actionLabel, { color: currentTheme.primaryText }]}>Draw</Text>
         </Pressable>
         
         <Pressable 
           style={styles.actionButton}
           onPress={() => setShowMindMap(!showMindMap)}
         >
-          <View style={styles.actionIcon}>
+          <View style={[neumorphicStyles.button, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]}>
             <Text style={styles.actionIconText}>🕸️</Text>
           </View>
-          <Text style={styles.actionLabel}>Mind Map</Text>
+          <Text style={[styles.actionLabel, { color: currentTheme.primaryText }]}>Mind Map</Text>
         </Pressable>
       </View>
 
       {/* Mind Map Overlay */}
       {showMindMap && (
-        <View style={styles.mindMapOverlay}>
-          <View style={styles.mindMapHeader}>
-            <Text style={styles.mindMapTitle}>Mind Map</Text>
+        <View style={[styles.mindMapOverlay, { backgroundColor: currentTheme.background }]}>
+          <View style={[styles.mindMapHeader, { borderBottomColor: currentTheme.border }]}>
+            <Text style={[styles.mindMapTitle, { color: currentTheme.primaryText }]}>Mind Map</Text>
             <Pressable 
-              style={styles.closeButton}
+              style={neumorphicStyles.backButton}
               onPress={() => setShowMindMap(false)}
             >
-              <Text style={styles.closeButtonText}>✕</Text>
+              <Text style={[neumorphicStyles.backText, { color: currentTheme.primaryText }]}>✕</Text>
             </Pressable>
           </View>
           <MindMapView text={note.text} />
@@ -310,7 +317,6 @@ export default function NoteDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1419',
   },
   header: {
     flexDirection: 'row',
@@ -319,20 +325,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 24,
-    backgroundColor: '#0f1419',
   },
   backButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#1a1d2e',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#2a2f38',
   },
   backText: {
-    color: '#0066ff',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -346,13 +347,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerTitle: {
-    color: '#ffffff',
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
   headerSubtitle: {
-    color: '#9BA1A6',
     fontSize: 14,
     fontWeight: '500',
     marginTop: 2,
@@ -362,14 +361,10 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#2a2f38',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#3a3f48',
   },
   undoHeaderText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -377,7 +372,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#ff3b30',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -439,7 +433,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   noteText: {
-    color: '#ffffff',
     fontSize: 18,
     lineHeight: 28,
     fontWeight: '400',
@@ -450,20 +443,17 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   drawingLabel: {
-    color: '#9BA1A6',
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 8,
   },
   drawingIndicator: {
-    backgroundColor: '#0066ff',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     alignSelf: 'flex-start',
   },
   drawingText: {
-    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -472,7 +462,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   editInput: {
-    color: '#ffffff',
     fontSize: 18,
     lineHeight: 28,
     minHeight: 200,
@@ -484,9 +473,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    backgroundColor: '#0f1419',
     borderTopWidth: 1,
-    borderTopColor: '#2a2f38',
     paddingHorizontal: 20,
     paddingVertical: 16,
     paddingBottom: 34, // Safe area for home indicator
@@ -500,18 +487,14 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#1a1d2e',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#2a2f38',
   },
   actionIconText: {
     fontSize: 20,
   },
   actionLabel: {
-    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -521,7 +504,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#0f1419',
     zIndex: 1000,
   },
   mindMapHeader: {
@@ -532,10 +514,8 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2f38',
   },
   mindMapTitle: {
-    color: '#ffffff',
     fontSize: 20,
     fontWeight: '700',
   },
@@ -543,12 +523,10 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#2a2f38',
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeButtonText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -558,7 +536,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
     fontSize: 16,
   },
   errorContainer: {
@@ -567,7 +544,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    color: '#ff3b30',
     fontSize: 18,
     fontWeight: '600',
   },
