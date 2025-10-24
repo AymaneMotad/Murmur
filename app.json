@@ -9,6 +9,7 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
+      "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0f1419"
     },
@@ -43,7 +44,14 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-voice/voice"
+      "@react-native-voice/voice",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you attach images to notes.",
+          "cameraPermission": "The app accesses your camera to let you take photos for notes."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
