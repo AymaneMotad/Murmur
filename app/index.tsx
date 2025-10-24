@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated, Modal, TextInput, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated, Modal, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Audio } from 'expo-av';
 import { router } from 'expo-router';
 import { saveNote } from '@/lib/storage';
 import { useTheme } from '@/hooks/use-theme';
-
-const { width, height } = Dimensions.get('window');
+import { useResponsiveLayout, useResponsiveComponentSizes, useResponsiveSpacing, useResponsiveTypography, useDeviceType } from '@/hooks/use-responsive';
 
 export default function RecordingScreen() {
   const { theme, isDark } = useTheme();
@@ -25,6 +24,13 @@ export default function RecordingScreen() {
   
   // Simple pulse animation for the recording button
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  
+  // Get responsive hooks
+  const device = useDeviceType();
+  const layout = useResponsiveLayout();
+  const componentSizes = useResponsiveComponentSizes();
+  const spacing = useResponsiveSpacing();
+  const typography = useResponsiveTypography();
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -313,9 +319,9 @@ export default function RecordingScreen() {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 24,
+      paddingHorizontal: 20,
       paddingTop: 60,
-      paddingBottom: 32,
+      paddingBottom: 24,
     },
     headerLeft: {
       flex: 1,
@@ -339,22 +345,20 @@ export default function RecordingScreen() {
     },
     title: {
       color: theme.text,
-      fontSize: 32,
-      fontWeight: '800',
+      fontSize: 28,
+      fontWeight: '700',
       marginBottom: 8,
-      letterSpacing: -0.5,
     },
     subtitle: {
       color: theme.textSecondary,
       fontSize: 18,
-      lineHeight: 24,
       maxWidth: 280,
     },
     mainContent: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 24,
+      paddingHorizontal: 20,
     },
     timerContainer: {
       alignItems: 'center',
@@ -366,7 +370,7 @@ export default function RecordingScreen() {
       fontWeight: '200',
       fontVariant: ['tabular-nums'],
       letterSpacing: 2,
-      marginBottom: 16,
+      marginBottom: 12,
     },
     recordingIndicator: {
       flexDirection: 'row',
@@ -430,14 +434,13 @@ export default function RecordingScreen() {
       color: theme.textSecondary,
       fontSize: 18,
       textAlign: 'center',
-      lineHeight: 24,
       maxWidth: 300,
       fontWeight: '500',
     },
     bottomNav: {
       alignItems: 'center',
-      paddingHorizontal: 24,
-      paddingTop: 32,
+      paddingHorizontal: 20,
+      paddingTop: 24,
       paddingBottom: 40,
     },
     notesButton: {
@@ -481,8 +484,8 @@ export default function RecordingScreen() {
     },
     modalTitle: {
       color: theme.text,
-      fontSize: 28,
-      fontWeight: '700',
+      fontSize: 24,
+      fontWeight: '600',
       marginBottom: 24,
       textAlign: 'center',
     },
@@ -496,7 +499,6 @@ export default function RecordingScreen() {
       minHeight: 240,
       textAlignVertical: 'top',
       fontSize: 18,
-      lineHeight: 26,
       shadowColor: theme.border,
       shadowOffset: { width: 4, height: 4 },
       shadowOpacity: 0.3,
@@ -506,7 +508,7 @@ export default function RecordingScreen() {
     modalActions: {
       flexDirection: 'row',
       gap: 20,
-      marginTop: 32,
+      marginTop: 24,
       justifyContent: 'center',
     },
     actionBtn: {
@@ -536,8 +538,8 @@ export default function RecordingScreen() {
     },
     actionText: { 
       color: theme.textInverse, 
-      fontWeight: '600',
       fontSize: 18,
+      fontWeight: '600',
     },
   });
 

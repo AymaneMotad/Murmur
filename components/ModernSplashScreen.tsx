@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
-
-const { width, height } = Dimensions.get('window');
+import { useResponsiveLayout, useResponsiveComponentSizes, useResponsiveSpacing, useResponsiveTypography, useDeviceType } from '@/hooks/use-responsive';
 
 interface ModernSplashScreenProps {
   onAnimationComplete?: () => void;
@@ -15,6 +14,13 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
   const logoAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const waveAnim = useRef(new Animated.Value(0)).current;
+  
+  // Get responsive hooks
+  const device = useDeviceType();
+  const layout = useResponsiveLayout();
+  const componentSizes = useResponsiveComponentSizes();
+  const spacing = useResponsiveSpacing();
+  const typography = useResponsiveTypography();
 
   useEffect(() => {
     // Start animations with staggered timing
@@ -71,7 +77,7 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
     return () => clearTimeout(timer);
   }, []);
 
-  const styles = StyleSheet.create({
+  const createResponsiveStyles = () => StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: theme.background,
@@ -89,17 +95,17 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
     content: {
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 40,
+      paddingHorizontal: device.isTablet ? 60 : 40,
       width: '100%',
     },
     logoContainer: {
-      marginBottom: 60,
+      marginBottom: device.isTablet ? 80 : 60,
       alignItems: 'center',
     },
     logo: {
-      width: 180,
-      height: 180,
-      borderRadius: 45,
+      width: device.isTablet ? 220 : 180,
+      height: device.isTablet ? 220 : 180,
+      borderRadius: device.isTablet ? 55 : 45,
       backgroundColor: theme.primary,
       alignItems: 'center',
       justifyContent: 'center',
@@ -110,27 +116,27 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
       elevation: 25,
     },
     logoText: {
-      fontSize: 80,
+      fontSize: device.isTablet ? 100 : 80,
       fontWeight: '900',
       color: theme.textInverse,
       letterSpacing: -3,
     },
     appName: {
-      fontSize: 56,
+      fontSize: device.isTablet ? 72 : 56,
       fontWeight: '900',
       color: theme.text,
       textAlign: 'center',
-      marginBottom: 20,
+      marginBottom: device.isTablet ? 28 : 20,
       letterSpacing: -2,
     },
     tagline: {
-      fontSize: 24,
+      fontSize: device.isTablet ? 32 : 24,
       fontWeight: '500',
       color: theme.textSecondary,
       textAlign: 'center',
-      marginBottom: 60,
-      lineHeight: 32,
-      maxWidth: 300,
+      marginBottom: device.isTablet ? 80 : 60,
+      lineHeight: device.isTablet ? 40 : 32,
+      maxWidth: device.isTablet ? 400 : 300,
     },
     loadingContainer: {
       flexDirection: 'row',
@@ -138,13 +144,15 @@ export default function ModernSplashScreen({ onAnimationComplete }: ModernSplash
       justifyContent: 'center',
     },
     loadingDot: {
-      width: 16,
-      height: 16,
-      borderRadius: 8,
+      width: device.isTablet ? 20 : 16,
+      height: device.isTablet ? 20 : 16,
+      borderRadius: device.isTablet ? 10 : 8,
       backgroundColor: theme.primary,
-      marginHorizontal: 8,
+      marginHorizontal: device.isTablet ? 12 : 8,
     },
   });
+
+  const styles = createResponsiveStyles();
 
 
   return (

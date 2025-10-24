@@ -5,7 +5,6 @@ import {
   Modal,
   Pressable,
   StyleSheet,
-  Dimensions,
   StatusBar,
 } from 'react-native';
 import { Svg, Path } from 'react-native-svg';
@@ -13,6 +12,7 @@ import DrawingCanvas from './DrawingCanvas';
 import { DrawingStroke } from '@/lib/storage';
 import { useTheme } from '@/hooks/use-theme';
 import { lightTheme, darkTheme } from '@/constants/neumorphic-theme';
+import { useDeviceType } from '@/hooks/use-responsive';
 
 interface DrawingModalProps {
   visible: boolean;
@@ -20,9 +20,6 @@ interface DrawingModalProps {
   onSave: (drawing: DrawingStroke[]) => void;
   initialDrawing?: DrawingStroke[];
 }
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const CANVAS_HEIGHT = Math.min(screenHeight * 0.75, 600); // Limit max height to prevent crashes
 
 // Simplified icons for better Android compatibility
 const PencilIcon = ({ color = '#000', size = 20 }) => (
@@ -86,13 +83,15 @@ const SizeSelector = ({
   onValueChange, 
   min = 1, 
   max = 10, 
-  theme
+  theme,
+  styles
 }: {
   value: number;
   onValueChange: (value: number) => void;
   min?: number;
   max?: number;
   theme?: any;
+  styles: any;
 }) => {
   const sizes = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   
@@ -133,6 +132,9 @@ export default function DrawingModal({
 }: DrawingModalProps) {
   const { isDark } = useTheme();
   const [currentStrokes, setCurrentStrokes] = useState<DrawingStroke[]>(initialDrawing || []);
+  
+  // Get responsive hooks
+  const device = useDeviceType();
   
   // Get current theme
   const currentTheme = isDark ? darkTheme : lightTheme;
@@ -193,6 +195,182 @@ export default function DrawingModal({
     onClose();
   }, [initialDrawing, onClose]);
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingTop: 60,
+      paddingBottom: 20,
+      borderBottomWidth: 1,
+    },
+    headerButton: {
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    headerButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    saveText: {
+      color: '#0066ff',
+    },
+    headerCenter: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+    },
+    canvasContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 16,
+    },
+    toolSelection: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderTopWidth: 1,
+      gap: 16,
+    },
+    toolOptions: {
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderTopWidth: 1,
+    },
+    drawingOptions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    actionButtons: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderTopWidth: 1,
+      gap: 24,
+    },
+    toolButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    colorPicker: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    colorButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      borderWidth: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 2, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    selectedColor: {
+      borderWidth: 3,
+      transform: [{ scale: 1.15 }],
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.5,
+      shadowRadius: 6,
+      elevation: 6,
+    },
+    activeTool: {
+      borderWidth: 2,
+    },
+    optionLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      marginRight: 8,
+    },
+    sizeOptions: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    sizeButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 12,
+      borderWidth: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 2, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    selectedSize: {
+      borderWidth: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.4,
+      shadowRadius: 6,
+      elevation: 6,
+    },
+    sizeText: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    actionButton: {
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 20,
+      minWidth: 80,
+      shadowColor: '#000',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    actionLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    sizeSelectorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    sizeIndicator: {
+      // This will be styled inline
+    },
+  });
+
   return (
     <Modal
       visible={visible}
@@ -219,8 +397,8 @@ export default function DrawingModal({
         {/* Drawing Canvas */}
         <View style={[styles.canvasContainer, { backgroundColor: currentTheme.cardBackground }]}>
           <DrawingCanvas
-            width={Math.min(screenWidth, 400)} // Limit width to prevent crashes
-            height={CANVAS_HEIGHT}
+            width={Math.min(device.width * 0.95, 400)}
+            height={Math.min(device.height * 0.6, 600)}
             onDrawingChange={handleDrawingChange}
             initialStrokes={currentStrokes}
             strokeColor={selectedTool === 'eraser' ? 'transparent' : selectedColor}
@@ -331,6 +509,7 @@ export default function DrawingModal({
                 min={1}
                 max={10}
                 theme={currentTheme}
+                styles={styles}
               />
             </View>
           </View>
@@ -352,176 +531,3 @@ export default function DrawingModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-  },
-  headerButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  headerButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  saveText: {
-    color: '#0066ff',
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  canvasContainer: {
-    flex: 1,
-  },
-  toolSelection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    gap: 16,
-  },
-  toolOptions: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-  },
-  drawingOptions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    gap: 24,
-  },
-  toolButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  colorPicker: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  colorButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  selectedColor: {
-    borderWidth: 3,
-    transform: [{ scale: 1.15 }],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  activeTool: {
-    borderWidth: 2,
-  },
-  optionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  sizeOptions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  sizeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  selectedSize: {
-    borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  sizeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  actionButton: {
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    minWidth: 80,
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  actionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  sizeSelectorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sizeIndicator: {
-    // This will be styled inline
-  },
-});
