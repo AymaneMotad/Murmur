@@ -210,9 +210,11 @@ export default function NoteDetailScreen() {
           <Text style={neumorphicStyles.backText}>←</Text>
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={neumorphicStyles.headerTitle}>Note</Text>
+          <Text style={neumorphicStyles.headerTitle}>
+            {isEditing ? 'Editing Note' : 'Note'}
+          </Text>
           <Text style={neumorphicStyles.headerSubtitle}>
-            {formatDate(note.createdAt)}
+            {isEditing ? 'Tap outside to save' : formatDate(note.createdAt)}
           </Text>
         </View>
         <View style={styles.headerActions}>
@@ -233,20 +235,27 @@ export default function NoteDetailScreen() {
       </View>
 
       {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {isEditing ? (
-          <View style={styles.editContainer}>
-            <TextInput
-              style={[neumorphicStyles.input, { color: currentTheme.primaryText, minHeight: 200 }]}
-              multiline
-              value={editText}
-              placeholder="Start typing your note..."
-              placeholderTextColor={currentTheme.secondaryText}
-              onChangeText={handleTextChange}
-              autoFocus
-            />
-          </View>
-        ) : (
+      {isEditing ? (
+        <Pressable 
+          style={{ flex: 1 }}
+          onPress={() => setIsEditing(false)}
+        >
+          <TextInput
+            style={[styles.fullScreenInput, { 
+              color: currentTheme.primaryText,
+              backgroundColor: currentTheme.background 
+            }]}
+            multiline
+            value={editText}
+            placeholder="Start typing your note..."
+            placeholderTextColor={currentTheme.secondaryText}
+            onChangeText={handleTextChange}
+            autoFocus
+            textAlignVertical="top"
+          />
+        </Pressable>
+      ) : (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.noteContainer}>
             <Pressable onPress={handleStartEditing} style={styles.noteTextContainer}>
               <Text style={[neumorphicStyles.noteText, { color: currentTheme.primaryText }]}>{note.text}</Text>
@@ -261,31 +270,33 @@ export default function NoteDetailScreen() {
               </View>
             )}
           </View>
-        )}
-      </ScrollView>
+        </ScrollView>
+      )}
 
-      {/* Bottom Action Buttons */}
-      <View style={[styles.bottomActions, { backgroundColor: currentTheme.background, borderTopColor: currentTheme.border }]}>
-        <Pressable 
-          style={styles.actionButton}
-          onPress={() => setShowDrawingModal(true)}
-        >
-          <View style={[neumorphicStyles.button, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]}>
-            <Text style={styles.actionIconText}>✏️</Text>
-          </View>
-          <Text style={[styles.actionLabel, { color: currentTheme.primaryText }]}>Draw</Text>
-        </Pressable>
-        
-        <Pressable 
-          style={styles.actionButton}
-          onPress={() => setShowMindMap(!showMindMap)}
-        >
-          <View style={[neumorphicStyles.button, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]}>
-            <Text style={styles.actionIconText}>🕸️</Text>
-          </View>
-          <Text style={[styles.actionLabel, { color: currentTheme.primaryText }]}>Mind Map</Text>
-        </Pressable>
-      </View>
+      {/* Bottom Action Buttons - Hidden when editing */}
+      {!isEditing && (
+        <View style={[styles.bottomActions, { backgroundColor: currentTheme.background, borderTopColor: currentTheme.border }]}>
+          <Pressable 
+            style={styles.actionButton}
+            onPress={() => setShowDrawingModal(true)}
+          >
+            <View style={[neumorphicStyles.button, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]}>
+              <Text style={styles.actionIconText}>✏️</Text>
+            </View>
+            <Text style={[styles.actionLabel, { color: currentTheme.primaryText }]}>Draw</Text>
+          </Pressable>
+          
+          <Pressable 
+            style={styles.actionButton}
+            onPress={() => setShowMindMap(!showMindMap)}
+          >
+            <View style={[neumorphicStyles.button, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]}>
+              <Text style={styles.actionIconText}>🕸️</Text>
+            </View>
+            <Text style={[styles.actionLabel, { color: currentTheme.primaryText }]}>Mind Map</Text>
+          </Pressable>
+        </View>
+      )}
 
       {/* Mind Map Overlay */}
       {showMindMap && (
@@ -465,6 +476,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 28,
     minHeight: 200,
+    textAlignVertical: 'top',
+  },
+  fullScreenInput: {
+    flex: 1,
+    fontSize: 18,
+    lineHeight: 28,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
     textAlignVertical: 'top',
   },
   bottomActions: {
