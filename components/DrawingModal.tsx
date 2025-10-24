@@ -20,7 +20,7 @@ interface DrawingModalProps {
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const CANVAS_HEIGHT = screenHeight * 0.75;
+const CANVAS_HEIGHT = Math.min(screenHeight * 0.75, 600); // Limit max height to prevent crashes
 
 // Draggable Size Selector Component
 const SizeSelector = ({ 
@@ -92,7 +92,13 @@ export default function DrawingModal({
   const [brushWidth, setBrushWidth] = useState(6);
 
   const handleDrawingChange = useCallback((newStrokes: DrawingStroke[]) => {
-    setCurrentStrokes(newStrokes);
+    try {
+      // Limit the number of strokes to prevent memory issues
+      const limitedStrokes = newStrokes.slice(-50); // Keep only last 50 strokes
+      setCurrentStrokes(limitedStrokes);
+    } catch (error) {
+      console.error('Error handling drawing change:', error);
+    }
   }, []);
 
   const handleClear = useCallback(() => {
@@ -164,7 +170,7 @@ export default function DrawingModal({
         {/* Drawing Canvas */}
         <View style={[styles.canvasContainer, { backgroundColor: isDarkBackground ? '#0f1419' : '#ffffff' }]}>
           <DrawingCanvas
-            width={screenWidth}
+            width={Math.min(screenWidth, 400)} // Limit width to prevent crashes
             height={CANVAS_HEIGHT}
             onDrawingChange={handleDrawingChange}
             initialStrokes={currentStrokes}

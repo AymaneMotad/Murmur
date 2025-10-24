@@ -7,7 +7,9 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ThemeProvider } from '@/hooks/use-theme';
 
-export const unstable_settings = {};
+export const unstable_settings = {
+  initialRouteName: "splash",
+};
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -16,7 +18,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack initialRouteName="splash">
+          <Stack>
             <Stack.Screen name="splash" options={{ headerShown: false }} />
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />

@@ -221,9 +221,9 @@ export default function ModernOnboardingScreen() {
     },
     content: {
       flex: 1,
-      paddingHorizontal: 24,
-      paddingTop: 60,
-      paddingBottom: 20,
+      paddingHorizontal: Math.max(24, width * 0.06), // Responsive padding
+      paddingTop: Math.max(60, height * 0.08), // Responsive top padding
+      paddingBottom: Math.max(20, height * 0.03), // Responsive bottom padding
     },
     stepContent: {
       flex: 1,

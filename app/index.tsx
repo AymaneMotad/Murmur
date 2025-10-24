@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, GestureResponderEvent, Animated, Modal, TextInput, PanResponder, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated, Modal, TextInput, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Audio } from 'expo-av';
-import * as Speech from 'expo-speech';
 import { router } from 'expo-router';
-import { saveNote, getUserPreferences } from '@/lib/storage';
-import * as Haptics from 'expo-haptics';
+import { saveNote } from '@/lib/storage';
 import { useTheme } from '@/hooks/use-theme';
+
+const { width, height } = Dimensions.get('window');
 
 export default function RecordingScreen() {
   const { theme, isDark } = useTheme();
@@ -18,16 +18,10 @@ export default function RecordingScreen() {
   const [transcript, setTranscript] = useState('');
   const [showReview, setShowReview] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const [selectedLanguage, setSelectedLanguage] = useState('en-US');
   
-  // Swipe up animation values
-  const swipeAnim = useRef(new Animated.Value(0)).current;
-  const swipeHintAnim = useRef(new Animated.Value(0)).current;
-  const swipeProgress = useRef(new Animated.Value(0)).current;
-  const [isSwipeActive, setIsSwipeActive] = useState(false);
-  const [swipeDistance, setSwipeDistance] = useState(0);
+  // Simple pulse animation for the recording button
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -40,92 +34,90 @@ export default function RecordingScreen() {
     return () => loop.stop();
   }, [panAnim]);
 
-  // Swipe hint animation
+  // Simple pulse animation for recording button when not recording
   useEffect(() => {
     if (!isRecording && !isProcessing) {
-      const hintLoop = Animated.loop(
+      const pulseLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(swipeHintAnim, { 
-            toValue: 1, 
-            duration: 2000, 
+          Animated.timing(pulseAnim, { 
+            toValue: 1.05, 
+            duration: 1000, 
             useNativeDriver: true 
           }),
-          Animated.timing(swipeHintAnim, { 
-            toValue: 0, 
-            duration: 2000, 
+          Animated.timing(pulseAnim, { 
+            toValue: 1, 
+            duration: 1000, 
             useNativeDriver: true 
           }),
         ])
       );
-      hintLoop.start();
-      return () => hintLoop.stop();
+      pulseLoop.start();
+      return () => pulseLoop.stop();
     }
-  }, [isRecording, isProcessing, swipeHintAnim]);
+  }, [isRecording, isProcessing, pulseAnim]);
 
-  // Load user's selected language
-  useEffect(() => {
-    const loadUserLanguage = async () => {
-      try {
-        const preferences = await getUserPreferences();
-        setSelectedLanguage(preferences.selectedLanguage);
-      } catch (error) {
-        console.error('Error loading user language:', error);
-      }
-    };
-    loadUserLanguage();
-  }, []);
 
+  // Request microphone permissions from the user
   const requestPermissions = useCallback(async (): Promise<boolean> => {
     const audioPerm = await Audio.requestPermissionsAsync();
     return audioPerm.status === 'granted';
   }, []);
 
+  // Start the recording timer
   const startTimer = () => {
     timerRef.current = setInterval(() => setElapsedMs((t) => t + 1000), 1000);
   };
+  
+  // Stop the recording timer
   const stopTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
   };
 
+  // Start recording audio
   const startRecording = useCallback(async () => {
-    const ok = await requestPermissions();
-    if (!ok) return;
     try {
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      // First, ask for microphone permission
+      const ok = await requestPermissions();
+      if (!ok) {
+        console.log('Permission denied');
+        return;
+      }
+      
+      // Configure audio settings for recording
+      await Audio.setAudioModeAsync({ 
+        allowsRecordingIOS: true, 
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false
+      });
+      
+      // Create a new recording instance
       const { recording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
+      
+      // Update state and start timer
       setRecording(recording);
       setIsRecording(true);
       setElapsedMs(0);
       startTimer();
-      // Try to start STT if native module is available (dev build)
-      try {
-        const voice = await import('@react-native-voice/voice');
-        // @ts-ignore runtime guard
-        voice.default.onSpeechResults = (e: any) => {
-          const values: string[] = e.value || [];
-          if (values.length) setTranscript(values[0]);
-        };
-        // @ts-ignore runtime guard
-        voice.default.onSpeechError = () => {};
-        // @ts-ignore runtime guard
-        await voice.default.start(selectedLanguage);
-      } catch {
-        // Expo Go path: STT unavailable, continue recording only
-      }
-      } catch {
-        // noop for MVP
-      }
-  }, [requestPermissions, selectedLanguage]);
+      
+      console.log('Recording started successfully');
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setIsRecording(false);
+    }
+  }, [requestPermissions]);
 
+  // Stop recording audio
   const stopRecording = useCallback(async () => {
     try {
+      // Stop the timer and show processing state
       stopTimer();
       setIsProcessing(true);
       
-      // Processing animation
+      // Play a simple processing animation
       Animated.sequence([
         Animated.timing(scaleAnim, {
           toValue: 0.8,
@@ -144,81 +136,31 @@ export default function RecordingScreen() {
         }),
       ]).start();
 
+      // Stop the recording
       if (recording) {
         await recording.stopAndUnloadAsync();
+        console.log('Recording stopped successfully');
       }
-      try {
-        const voice = await import('@react-native-voice/voice');
-        // @ts-ignore
-        await voice.default.stop();
-      } catch {}
-    } catch {}
+    } catch (error) {
+      console.error('Error stopping recording:', error);
+    }
+    
+    // Update state and show review modal
     setIsRecording(false);
     setIsProcessing(false);
     setShowReview(true);
   }, [recording, scaleAnim]);
 
+  // Handle microphone button press - toggle recording
   const onMicPress = useCallback(() => {
-    if (isRecording) stopRecording();
-    else startRecording();
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
   }, [isRecording, startRecording, stopRecording]);
 
-  const onSwipeUp = useCallback((e: GestureResponderEvent) => {
-    startRecording();
-  }, [startRecording]);
-
-  // Pan responder for swipe up gesture
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => !isRecording && !isProcessing,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dy) > 10 && gestureState.dy < 0; // Only respond to upward swipes
-      },
-      onPanResponderGrant: () => {
-        setIsSwipeActive(true);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      },
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy < 0) { // Only track upward movement
-          const distance = Math.abs(gestureState.dy);
-          setSwipeDistance(distance);
-          const progress = Math.min(distance / 100, 1); // Max progress at 100px
-          swipeProgress.setValue(progress);
-          swipeAnim.setValue(progress * 20); // Move up to 20px
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        const distance = Math.abs(gestureState.dy);
-        const velocity = Math.abs(gestureState.vy);
-        
-        // Trigger recording if swipe distance > 60px or velocity > 0.5
-        if (distance > 60 || velocity > 0.5) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          onSwipeUp({} as GestureResponderEvent);
-        }
-        
-        // Reset animations
-        Animated.parallel([
-          Animated.spring(swipeAnim, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 100,
-            friction: 8,
-          }),
-          Animated.spring(swipeProgress, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 100,
-            friction: 8,
-          }),
-        ]).start();
-        
-        setIsSwipeActive(false);
-        setSwipeDistance(0);
-      },
-    })
-  ).current;
-
+  // Calculate minutes and seconds for display
   const minutes = Math.floor(elapsedMs / 60000)
     .toString()
     .padStart(2, '0');
@@ -230,9 +172,9 @@ export default function RecordingScreen() {
     container: {
       flex: 1,
       backgroundColor: theme.background,
-      paddingHorizontal: 20,
-      paddingTop: 60,
-      paddingBottom: 40,
+      paddingHorizontal: Math.max(20, width * 0.05), // Responsive padding
+      paddingTop: Math.max(60, height * 0.08), // Responsive top padding
+      paddingBottom: Math.max(40, height * 0.05), // Responsive bottom padding
     },
     header: {
       flexDirection: 'row',
@@ -261,16 +203,16 @@ export default function RecordingScreen() {
     },
     title: {
       color: theme.text,
-      fontSize: 36,
+      fontSize: Math.max(28, width * 0.08), // Responsive font size
       fontWeight: '700',
       marginBottom: 12,
       letterSpacing: -0.8,
     },
     subtitle: {
       color: theme.textSecondary,
-      fontSize: 18,
-      lineHeight: 26,
-      maxWidth: 280,
+      fontSize: Math.max(16, width * 0.045), // Responsive font size
+      lineHeight: Math.max(24, width * 0.06), // Responsive line height
+      maxWidth: Math.min(320, width * 0.8), // Responsive max width
     },
     mainContent: {
       flex: 1,
@@ -283,7 +225,7 @@ export default function RecordingScreen() {
     },
     timer: {
       color: theme.text,
-      fontSize: 56,
+      fontSize: Math.max(40, width * 0.12), // Responsive timer font size
       fontWeight: '300',
       fontVariant: ['tabular-nums'],
       letterSpacing: 3,
@@ -331,9 +273,9 @@ export default function RecordingScreen() {
       opacity: 0.9,
     },
     micButtonInner: {
-      width: 200,
-      height: 200,
-      borderRadius: 100,
+      width: Math.max(160, Math.min(220, width * 0.5)), // Responsive mic button size
+      height: Math.max(160, Math.min(220, width * 0.5)), // Responsive mic button size
+      borderRadius: Math.max(80, Math.min(110, width * 0.25)), // Responsive border radius
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: theme.primary,
@@ -342,55 +284,17 @@ export default function RecordingScreen() {
       shadowRadius: 20,
       elevation: 12,
     },
-    swipeHint: {
-      position: 'absolute',
-      top: -50,
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 10,
-    },
-    swipeHintText: {
-      color: theme.textSecondary,
-      fontSize: 14,
-      fontWeight: '600',
-      letterSpacing: 0.5,
-      textAlign: 'center',
-      backgroundColor: theme.surface,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: theme.border,
-    },
-    swipeProgress: {
-      position: 'absolute',
-      top: -30,
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 5,
-    },
-    swipeProgressBar: {
-      width: 4,
-      height: 20,
-      backgroundColor: theme.primary,
-      borderRadius: 2,
-      shadowColor: theme.primary,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.8,
-      shadowRadius: 4,
-      elevation: 4,
-    },
     micIcon: {
       color: theme.textInverse,
-      fontSize: 80,
+      fontSize: Math.max(60, width * 0.18), // Responsive icon size
       fontWeight: 'bold',
     },
     hint: {
       color: theme.textSecondary,
-      fontSize: 18,
+      fontSize: Math.max(16, width * 0.045), // Responsive font size
       textAlign: 'center',
-      lineHeight: 26,
-      maxWidth: 320,
+      lineHeight: Math.max(24, width * 0.06), // Responsive line height
+      maxWidth: Math.min(350, width * 0.85), // Responsive max width
       fontWeight: '400',
     },
     bottomNav: {
@@ -501,7 +405,7 @@ export default function RecordingScreen() {
         <View style={styles.headerLeft}>
           <Text style={styles.title}>Murmur</Text>
           <Text style={styles.subtitle}>
-            {isProcessing ? 'Processing…' : isSpeaking ? 'Speaking…' : isRecording ? 'Recording…' : 'Your thoughts, amplified'}
+            {isProcessing ? 'Processing…' : isRecording ? 'Recording…' : 'Your thoughts, amplified'}
           </Text>
         </View>
         <Pressable 
@@ -527,65 +431,17 @@ export default function RecordingScreen() {
 
         {/* Microphone Button */}
         <View style={styles.micContainer}>
-          {/* Swipe up hint animation */}
-          {!isRecording && !isProcessing && (
-            <Animated.View
-              style={[
-                styles.swipeHint,
-                {
-                  opacity: swipeHintAnim.interpolate({
-                    inputRange: [0, 0.5, 1],
-                    outputRange: [0.3, 1, 0.3],
-                  }),
-                  transform: [
-                    {
-                      translateY: swipeHintAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, -8],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
-              <Text style={styles.swipeHintText}>↑ Swipe up to record</Text>
-            </Animated.View>
-          )}
-
-          {/* Swipe progress indicator */}
-          {isSwipeActive && (
-            <Animated.View
-              style={[
-                styles.swipeProgress,
-                {
-                  opacity: swipeProgress,
-                  transform: [
-                    {
-                      scale: swipeProgress.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.8, 1.2],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
-              <View style={styles.swipeProgressBar} />
-            </Animated.View>
-          )}
-
           <Animated.View
             style={[
               styles.micButtonWrapper,
               {
                 transform: [
                   {
-                    translateY: swipeAnim,
+                    scale: pulseAnim,
                   },
                 ],
               },
             ]}
-            {...panResponder.panHandlers}
           >
             <Pressable
               onPress={onMicPress}
@@ -596,7 +452,7 @@ export default function RecordingScreen() {
                 style={[
                   styles.micButtonInner,
                   {
-                    backgroundColor: isProcessing ? '#ff6b35' : isSpeaking ? '#4CAF50' : '#0066ff',
+                    backgroundColor: isProcessing ? '#ff6b35' : '#0066ff',
                     transform: [
                       {
                         scale: Animated.multiply(
@@ -605,12 +461,12 @@ export default function RecordingScreen() {
                         ),
                       },
                     ],
-                    shadowOpacity: isSwipeActive ? 0.6 : 0.3,
+                    shadowOpacity: 0.3,
                   },
                 ]}
               >
                 <Text style={styles.micIcon}>
-                  {isProcessing ? '⚡' : isSpeaking ? '🔊' : '●'}
+                  {isProcessing ? '⚡' : '●'}
                 </Text>
               </Animated.View>
             </Pressable>
@@ -619,7 +475,7 @@ export default function RecordingScreen() {
 
         {/* Hint Text */}
         <Text style={styles.hint}>
-          {isRecording ? 'Tap to stop recording' : 'Tap to start recording • Swipe up for quick-start'}
+          {isRecording ? 'Tap to stop recording' : 'Tap to start recording'}
         </Text>
       </View>
 
