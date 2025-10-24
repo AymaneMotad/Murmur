@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, Alert, Animated, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, Alert, Animated, PanResponder, Easing } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
 import { getAllNotes, MurmurNote, updateNote, deleteNote, DrawingStroke } from '@/lib/storage';
@@ -11,11 +11,49 @@ interface SwipeableNoteProps {
   onDelete: (note: MurmurNote) => void;
   onAddDrawing: (note: MurmurNote) => void;
   formatDate: (timestamp: number) => string;
+  index: number;
 }
 
-const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, onAddDrawing, formatDate }) => {
+const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, onAddDrawing, formatDate, index }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
+  
+  // Animation values for card entrance
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const cardTranslateY = useRef(new Animated.Value(30)).current;
+  const cardScale = useRef(new Animated.Value(0.95)).current;
+  
+  // Animation values for delete background
+  const deleteBackgroundOpacity = useRef(new Animated.Value(0)).current;
+
+  // Entrance animation effect
+  useEffect(() => {
+    const delay = index * 100; // Stagger animation by 100ms per card
+    
+    Animated.parallel([
+      Animated.timing(cardOpacity, {
+        toValue: 1,
+        duration: 600,
+        delay,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }),
+      Animated.timing(cardTranslateY, {
+        toValue: 0,
+        duration: 600,
+        delay,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }),
+      Animated.timing(cardScale, {
+        toValue: 1,
+        duration: 600,
+        delay,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.back(1.2)),
+      }),
+    ]).start();
+  }, [index]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -28,34 +66,52 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, o
       onPanResponderMove: (_, gestureState) => {
         if (gestureState.dx < 0) {
           translateX.setValue(gestureState.dx);
+          // Show red background when swiping left (standard UX)
+          const swipeProgress = Math.min(Math.abs(gestureState.dx) / 80, 1);
+          deleteBackgroundOpacity.setValue(swipeProgress);
+        } else {
+          // Hide delete background when swiping right
+          deleteBackgroundOpacity.setValue(0);
         }
       },
       onPanResponderRelease: (_, gestureState) => {
         const { dx, vx } = gestureState;
         // End swiping
         
-        if (dx < -100 || vx < -0.5) {
-          // Swipe left to delete
+        if (dx < -80 || vx < -0.3) {
+          // Swipe left to delete - more forgiving threshold
           Animated.parallel([
             Animated.timing(translateX, {
               toValue: -300,
-              duration: 200,
+              duration: 250,
               useNativeDriver: true,
+              easing: Easing.out(Easing.cubic),
             }),
             Animated.timing(opacity, {
               toValue: 0,
-              duration: 200,
+              duration: 250,
               useNativeDriver: true,
+              easing: Easing.out(Easing.cubic),
             }),
           ]).start(() => {
             onDelete(item);
           });
         } else {
-          // Snap back
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
+          // Snap back with smooth animation
+          Animated.parallel([
+            Animated.spring(translateX, {
+              toValue: 0,
+              useNativeDriver: true,
+              tension: 100,
+              friction: 8,
+            }),
+            Animated.timing(deleteBackgroundOpacity, {
+              toValue: 0,
+              duration: 300,
+              useNativeDriver: true,
+              easing: Easing.out(Easing.cubic),
+            }),
+          ]).start();
         }
       },
     })
@@ -64,7 +120,10 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, o
   return (
     <View style={styles.noteCardContainer}>
       {/* Delete background */}
-      <View style={styles.deleteBackground}>
+      <Animated.View style={[
+        styles.deleteBackground,
+        { opacity: deleteBackgroundOpacity }
+      ]}>
         <View style={styles.deleteContent}>
           <View style={styles.deleteIconContainer}>
             <View style={styles.trashIcon}>
@@ -76,15 +135,19 @@ const SwipeableNote: React.FC<SwipeableNoteProps> = ({ item, onEdit, onDelete, o
           </View>
           <Text style={styles.deleteText}>Delete</Text>
         </View>
-      </View>
+      </Animated.View>
       
       {/* Swipeable note content */}
       <Animated.View 
         style={[
           styles.noteCard, 
           { 
-            transform: [{ translateX }], 
-            opacity 
+            transform: [
+              { translateX },
+              { translateY: cardTranslateY },
+              { scale: cardScale }
+            ], 
+            opacity: Animated.multiply(opacity, cardOpacity)
           }
         ]}
         {...panResponder.panHandlers}
@@ -139,9 +202,29 @@ export default function NotesScreen() {
   const [loading, setLoading] = useState(true);
   const [drawingNote, setDrawingNote] = useState<MurmurNote | null>(null);
   const [showDrawingModal, setShowDrawingModal] = useState(false);
+  
+  // Header animation values
+  const headerOpacity = useRef(new Animated.Value(0)).current;
+  const headerTranslateY = useRef(new Animated.Value(-20)).current;
 
   useEffect(() => {
     loadNotes();
+    
+    // Animate header entrance
+    Animated.parallel([
+      Animated.timing(headerOpacity, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }),
+      Animated.timing(headerTranslateY, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }),
+    ]).start();
   }, []);
 
   useFocusEffect(
@@ -226,7 +309,7 @@ export default function NotesScreen() {
     }
   };
 
-  const renderNote = ({ item }: { item: MurmurNote }) => {
+  const renderNote = ({ item, index }: { item: MurmurNote; index: number }) => {
     return (
       <SwipeableNote
         item={item}
@@ -234,6 +317,7 @@ export default function NotesScreen() {
         onDelete={handleDeleteNote}
         onAddDrawing={handleAddDrawing}
         formatDate={formatDate}
+        index={index}
       />
     );
   };
@@ -249,13 +333,19 @@ export default function NotesScreen() {
     return (
       <View style={styles.container}>
         <StatusBar style="light" />
-        <View style={styles.header}>
+        <Animated.View style={[
+          styles.header,
+          {
+            opacity: headerOpacity,
+            transform: [{ translateY: headerTranslateY }]
+          }
+        ]}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <Text style={styles.backText}>← Back</Text>
           </Pressable>
           <Text style={styles.headerTitle}>Notes</Text>
           <View style={styles.placeholder} />
-        </View>
+        </Animated.View>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
@@ -268,7 +358,13 @@ export default function NotesScreen() {
       <StatusBar style="light" />
       
       {/* Header */}
-      <View style={styles.header}>
+      <Animated.View style={[
+        styles.header,
+        {
+          opacity: headerOpacity,
+          transform: [{ translateY: headerTranslateY }]
+        }
+      ]}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backText}>←</Text>
         </Pressable>
@@ -277,7 +373,7 @@ export default function NotesScreen() {
           <Text style={styles.headerSubtitle}>{notes.length} {notes.length === 1 ? 'note' : 'notes'}</Text>
         </View>
         <View style={styles.placeholder} />
-      </View>
+      </Animated.View>
       
       {/* Notes List */}
       <FlatList
@@ -305,7 +401,7 @@ export default function NotesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1419',
+    backgroundColor: '#0a0d12',
   },
   header: {
     flexDirection: 'row',
@@ -314,7 +410,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 24,
-    backgroundColor: '#0f1419',
+    backgroundColor: '#0a0d12',
   },
   backButton: {
     width: 32,
@@ -325,6 +421,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#2a2f38',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   backText: {
     color: '#0066ff',
@@ -360,7 +461,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: '#2a2f38',
+    backgroundColor: '#1a1d2e',
     marginVertical: 8,
     marginHorizontal: 20,
   },
@@ -454,10 +555,10 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   noteContent: {
     padding: 20,
