@@ -20,6 +20,9 @@ export default function RecordingScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   
+  // For handling long recordings
+  const [speechTimeout, setSpeechTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  
   // Simple pulse animation for the recording button
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -56,6 +59,15 @@ export default function RecordingScreen() {
     }
   }, [isRecording, isProcessing, pulseAnim]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (speechTimeout) {
+        clearTimeout(speechTimeout);
+      }
+    };
+  }, [speechTimeout]);
+
 
   // Request microphone permissions from the user
   const requestPermissions = useCallback(async (): Promise<boolean> => {
@@ -73,10 +85,50 @@ export default function RecordingScreen() {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
   };
+  
+  // Restart speech recognition for long recordings
+  const restartSpeechRecognition = useCallback(async () => {
+    try {
+      const voice = await import('@react-native-voice/voice');
+      
+      // Stop current recognition
+      await voice.default.stop();
+      
+      // Clear handlers and set up new ones
+      voice.default.removeAllListeners();
+      
+      voice.default.onSpeechStart = () => {
+        console.log('Speech recognition restarted');
+      };
+      
+      voice.default.onSpeechResults = (e: any) => {
+        console.log('Speech results received (restart):', e);
+        if (e.value && e.value.length > 0) {
+          // For restarts, append to existing transcript
+          const newText = e.value[0];
+          setTranscript(prev => prev + (prev ? ' ' : '') + newText);
+        }
+      };
+      
+      voice.default.onSpeechError = (e: any) => {
+        console.log('Speech error (restart):', e.error);
+      };
+      
+      // Start again
+      await voice.default.start('en-US');
+      console.log('Speech recognition restarted successfully');
+      
+    } catch (error) {
+      console.log('Failed to restart speech recognition:', error);
+    }
+  }, []);
 
   // Start recording audio
   const startRecording = useCallback(async () => {
     try {
+      // Reset transcript state before starting
+      setTranscript('');
+      
       // First, ask for microphone permission
       const ok = await requestPermissions();
       if (!ok) {
@@ -103,23 +155,63 @@ export default function RecordingScreen() {
       setElapsedMs(0);
       startTimer();
       
-      // Start speech recognition if available
+      // Start speech recognition following official docs
       try {
         const voice = await import('@react-native-voice/voice');
-        voice.default.onSpeechResults = (e: any) => {
-          const values: string[] = e.value || [];
-          if (values.length > 0) {
-            setTranscript(values[0]);
-          }
-        };
-        voice.default.onSpeechError = (e: any) => {
-          console.log('Speech recognition error:', e.error);
-        };
-        await voice.default.start('en-US');
-        console.log('Speech recognition started');
+        
+        // Clean up any existing voice recognition first
+        try {
+          await voice.default.destroy();
+        } catch {
+          // Ignore if already destroyed
+        }
+        
+        // Check if speech recognition is available
+        const isAvailable = await voice.default.isAvailable();
+        console.log('Speech recognition available:', isAvailable);
+        
+        if (isAvailable) {
+          // Clear any existing handlers first
+          voice.default.removeAllListeners();
+          
+          // Set up handlers following the official pattern
+          voice.default.onSpeechStart = () => {
+            console.log('Speech recognition started');
+          };
+          
+          voice.default.onSpeechEnd = () => {
+            console.log('Speech recognition ended');
+          };
+          
+          voice.default.onSpeechResults = (e: any) => {
+            console.log('Speech results received:', e);
+            if (e.value && e.value.length > 0) {
+              // Use the latest result directly, don't accumulate
+              setTranscript(e.value[0]);
+            }
+          };
+          
+          voice.default.onSpeechError = (e: any) => {
+            console.log('Speech error:', e.error);
+          };
+          
+          // Start speech recognition
+          await voice.default.start('en-US');
+          console.log('Speech recognition started successfully');
+          
+          // Set up timeout to restart speech recognition for long recordings (every 30 seconds)
+          const timeout = setTimeout(() => {
+            console.log('Restarting speech recognition for long recording...');
+            restartSpeechRecognition();
+          }, 30000); // 30 seconds
+          
+          setSpeechTimeout(timeout);
+        } else {
+          console.log('Speech recognition not available on this device');
+        }
+        
       } catch (error) {
-        console.log('Speech recognition not available:', error);
-        // Continue without speech recognition
+        console.log('Speech recognition setup failed:', error);
       }
       
       console.log('Recording started successfully');
@@ -127,7 +219,7 @@ export default function RecordingScreen() {
       console.error('Error starting recording:', error);
       setIsRecording(false);
     }
-  }, [requestPermissions]);
+  }, [requestPermissions, restartSpeechRecognition]);
 
   // Stop recording audio
   const stopRecording = useCallback(async () => {
@@ -161,13 +253,21 @@ export default function RecordingScreen() {
         console.log('Recording stopped successfully');
       }
       
-      // Stop speech recognition if it was started
+      // Clear speech timeout
+      if (speechTimeout) {
+        clearTimeout(speechTimeout);
+        setSpeechTimeout(null);
+      }
+      
+      // Stop speech recognition
       try {
         const voice = await import('@react-native-voice/voice');
         await voice.default.stop();
-        console.log('Speech recognition stopped');
+        await voice.default.destroy();
+        voice.default.removeAllListeners();
+        console.log('Speech recognition stopped and cleaned up');
       } catch (error) {
-        console.log('Speech recognition stop error:', error);
+        console.log('Speech stop error:', error);
       }
     } catch (error) {
       console.error('Error stopping recording:', error);
@@ -177,13 +277,15 @@ export default function RecordingScreen() {
     setIsRecording(false);
     setIsProcessing(false);
     
-    // If no transcript was captured, provide a placeholder
+    // If no transcript was captured, provide a helpful placeholder
     if (!transcript.trim()) {
-      setTranscript('Tap to add your notes...');
+      setTranscript(''); // Start with empty text for better UX
     }
     
+    console.log('Final transcript before modal:', transcript);
+    
     setShowReview(true);
-  }, [recording, scaleAnim, transcript]);
+  }, [recording, scaleAnim, transcript, speechTimeout]);
 
   // Handle microphone button press - toggle recording
   const onMicPress = useCallback(() => {
@@ -511,6 +613,19 @@ export default function RecordingScreen() {
         <Text style={styles.hint}>
           {isRecording ? 'Tap to stop recording' : 'Tap to start recording'}
         </Text>
+        
+        {/* Debug test button */}
+        {__DEV__ && (
+          <Pressable 
+            style={{ backgroundColor: '#0066ff', padding: 10, marginTop: 10, borderRadius: 8 }}
+            onPress={() => {
+              console.log('Test button pressed');
+              setTranscript('Test transcription - this should appear in the textbox');
+            }}
+          >
+            <Text style={{ color: 'white', textAlign: 'center' }}>Test Transcription</Text>
+          </Pressable>
+        )}
       </View>
 
       {/* Bottom Navigation */}

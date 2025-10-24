@@ -8,6 +8,10 @@
     "scheme": "murmur",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0f1419"
+    },
     "ios": {
       "supportsTablet": true,
       "deploymentTarget": "18.0",
@@ -38,7 +42,8 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "@react-native-voice/voice"
     ],
     "experiments": {
       "typedRoutes": true,
